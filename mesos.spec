@@ -40,6 +40,7 @@ Patch1:          build_mods.patch
 Patch2:          fileshuffle_mods.patch
 # git diff --no-ext-diff 0.16.0 0.16.0-testing >testing_mods.patch
 Patch3:          testing_mods.patch
+Patch4:          libev_mod.patch
 
 BuildRequires:  libtool
 BuildRequires:  automake
@@ -97,6 +98,7 @@ Provides header and development files for %{name}.
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
 
 ######################################
 # NOTE: remove all bundled elements
