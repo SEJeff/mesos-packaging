@@ -253,6 +253,9 @@ exit 0
 %changelog
 * Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b
 - Updated to 0.18.0-rc3
+- Included subpackaging around language bindings (Java & Python)
+- Imporved systemd integration 
+- Itegration to rebuild libev-source w/-DEV_CHILD_ENABLE=0
 
 * Mon Jan 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.16.0-3.afe9947
 - Updated to 0.16.0-rc3
