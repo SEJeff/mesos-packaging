@@ -5,9 +5,8 @@ After=network.target
 Wants=network.target
 
 [Service]
-EnvironmentFile=-/etc/sysconfig/mesos/mesos-slave-env
-#Type=forking 
-ExecStart=/usr/sbin/mesos-slave --master=localhost:5050 --log_dir=/var/log/mesos --work_dir=/var/run/mesos
+Type=forking 
+ExecStart=/usr/sbin/mesos-daemon.sh mesos-slave
 ExecStop=/usr/bin/killall -s 9 mesos-slave
 ExecReload=/bin/kill -HUP $MAINPID
 User=mesos
@@ -15,7 +14,25 @@ Group=mesos
 Restart=always
 RestartSec=20
 LimitNOFILE=16384
-#ControlGroup=cpu:/mesos
+
+#######################################
+# Note: Below are cgroup options
+#######################################
+#Slice=mesos
+#CPUAccounting=true
+#CPUShares=1024
+
+##################
+MemoryAccounting=true
+#TBD: MemoryLimit=bytes, MemorySoftLimit=bytes
+##################
+#BlockIOAccounting=true
+#BlockIOWeight=??
+#BlockIODeviceWeight=??
+#TBD: BlockIOReadBandwidth=bytes, BlockIOWriteBandwidth=bytes
+
+#DeviceAllow=
+#DevicePolicy=auto|closed|strict
 
 [Install]
 WantedBy=multi-user.target

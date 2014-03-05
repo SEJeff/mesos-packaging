@@ -1,13 +1,13 @@
-%global commit     afe994774266154c544f5efc37f31a74cbf8a200 
-
+%global commit      a411a4bc78eda4b92bc17e9777029f1111716135
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global gentag      0.16.0-rc3
-
+%global tag         0.18.0-rc3
 %global skiptests   1
+%global libevver    4.15
+%global py_version  2.7
 
 Name:          mesos
-Version:       0.16.0
-Release:       3.%{shortcommit}%{?dist}
+Version:       0.18.0
+Release:       1.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -16,34 +16,20 @@ Source0:       https://github.com/apache/mesos/archive/%{commit}/%{name}-%{versi
 Source1:       %{name}-tmpfiles.conf
 Source2:       %{name}-master.service
 Source3:       %{name}-slave.service
+Source4:       %{name}-master-env.sh
+Source5:       %{name}-slave-env.sh
 
 #####################################
-# NOTE: This patch has been accepted upstream and can be removed next release
-#####################################
-Patch0:         https://issues.apache.org/jira/secure/attachment/12615152/MESOS-831.patch
-
-#####################################
-# NOTE: The modifications have been broken into three patches which are consistent 
-# with *many* other projects, and are tracking @
-#
-# https://github.com/timothysc/mesos
-# Full integration stream is: https://github.com/timothysc/mesos/tree/0.16.0-integ
-#
-# The shuffle patch is maintained because it is a
-# patch that is trying to be pushed upstream, thus breaking it out as a series
-# of steps doesn't make sense, but has been isolated into it's own patch per review.
+# NOTE: Tracking against:
+# https://github.com/timothysc/mesos/tree/0.18.0-integ
+# diffed against 0.18.0-rc3
 ####################################
-#git diff --no-ext-diff 0.16.0  0.16.0-pre-shuffle > build_mods.patch
-Patch1:          build_mods.patch
-# git diff --no-ext-diff 0.16.0-pre-shuffle 0.16.0-post-shuffle > fileshuffle_mods.patch
-# b/c order matters on a shuffle-patch. 
-Patch2:          fileshuffle_mods.patch
-# git diff --no-ext-diff 0.16.0 0.16.0-testing >testing_mods.patch
-Patch3:          testing_mods.patch
+Patch0:          mesos-0.18.0-integ.patch
 
 BuildRequires:  libtool
 BuildRequires:  automake
 BuildRequires:  autoconf
+BuildRequires:  java-devel
 BuildRequires:  zlib-devel
 BuildRequires:  libcurl-devel
 BuildRequires:  http-parser-devel
@@ -52,7 +38,7 @@ BuildRequires:  glog-devel
 BuildRequires:  gmock-devel
 BuildRequires:  gtest-devel
 BuildRequires:  gperftools-devel
-BuildRequires:  libev-devel
+BuildRequires:  libev-source
 BuildRequires:  leveldb-devel
 BuildRequires:  protobuf-devel
 BuildRequires:  python-boto
@@ -88,15 +74,39 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 Provides header and development files for %{name}.
+
+##############################################
+%package java
+Summary:        Java interface for %{name}
+Group:          Development/Libraries
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+
+%description java
+The %{name}-java package contains Java bindings for %{name}.
+
+##############################################
+%package -n python-%{name}
+Summary:        Python support for %{name}
+BuildRequires:  python2-devel
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       python2
+
+%description -n python-%{name}
+The python-%{name} package contains Python bindings for %{name}.
+
 ##############################################
 
 %prep
 %setup -q -n %{name}-%{commit}
-
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
+
+######################################
+# We need to rebuild libev and bind statically
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
+######################################
+cp -r %{_datadir}/libev-source libev-%{libevver}
+cd libev-%{libevver}
+autoreconf -i
 
 ######################################
 # NOTE: remove all bundled elements
@@ -106,21 +116,23 @@ Provides header and development files for %{name}.
 rm -rf 3rdparty
 
 %build
+######################################
+# We need to rebuild libev and bind statically
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
+cd libev-%{libevver}
+export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+%configure --enable-shared=no --with-pic
+make libev.la
+cd ../
+######################################
 autoreconf -vfi
+export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 %configure --disable-static
 make
 ######################################
 # NOTE: %{?_smp_mflags}
 # currently fails upstream
-######################################
-
-######################################
-# NOTE: https://issues.apache.org/jira/browse/MESOS-899
-# Python installation is still TBD:
-#
-# export PYTHONPATH=${PYTHONPATH}:{buildroot}{python_sitearch}
-# mkdir -p {buildroot}{python_sitearch}
-# python src/python/setup.py install --prefix={buildroot}{python_sitearch}
 ######################################
 
 %check
@@ -137,7 +149,17 @@ make
 %endif
 
 %install
-%make_install 
+%make_install
+
+######################################
+# NOTE: https://issues.apache.org/jira/browse/MESOS-899
+export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
+export PYTHONPATH=%{buildroot}%{python_sitearch}
+mkdir -p %{buildroot}%{python_sitearch}
+python src/python/setup.py install --root=%{buildroot} --prefix=/usr
+######################################
 
 # fedora guidelines no .a|.la
 rm -f %{buildroot}%{_libdir}/*.la
@@ -149,6 +171,9 @@ rm -rf mv %{buildroot}%{_sysconfdir}/%{name}/deploy
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
 
+install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/%{name}
+install -m 0644 %{SOURCE5} %{buildroot}%{_sysconfdir}/%{name}
+
 mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
@@ -157,26 +182,53 @@ mkdir -p %{buildroot}%{python_sitelib}
 mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
+######################
+# NOTE: The java setup is custom b/c they *DO NOT* use maven
+# to build, thus everything needs to be custom. 
+######################
+mkdir -p %{buildroot}%{_javadir}
+mkdir -p %{buildroot}%{_mavenpomdir}
+cp src/%{name}-%{version}.jar %{buildroot}%{_javadir}/%{name}.jar
+cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
+
+%add_maven_depmap JPP-%{name}.pom %{name}.jar
+
 ############################################
 %files
-%doc LICENSE README.md
+%doc LICENSE NOTICE
 %{_libdir}/libmesos-%{version}.so.*
 %{_bindir}/mesos*
 %{_sbindir}/mesos-*
 %{_datadir}/%{name}/
 %{_libexecdir}/%{name}/
 #system integration aspects
-%{_sysconfdir}/%{name}/
+%{_sysconfdir}/%{name}/*.template
 %{python_sitelib}/%{name}/
-%{_var}/log/%{name}/
-%config(noreplace) %_sysconfdir/tmpfiles.d/%{name}.conf
+%attr(0755,mesos,mesos) %{_var}/log/%{name}/
+%config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
+%config(noreplace) %{_sysconfdir}/%{name}/*env.sh
 %{_unitdir}/%{name}*.service
 
+######################
 %files devel
-%doc LICENSE README.md
+%doc LICENSE NOTICE
 %{_includedir}/mesos/
 %{_libdir}/libmesos.so
 %{_libdir}/pkgconfig/%{name}.pc
+
+######################
+%files java
+%doc LICENSE NOTICE
+%{_javadir}/%{name}.jar
+%{_mavenpomdir}/JPP-%{name}.pom
+%{_mavendepmapfragdir}/%{name}
+
+######################
+%files -n python-%{name}
+%doc LICENSE NOTICE
+%{python_sitearch}/mesos*.py*
+%{python_sitearch}/_mesos.so
+%{python_sitearch}/%{name}-%{version}-py%{py_version}.egg-info
 ############################################
 
 %pre
@@ -199,6 +251,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b
+- Updated to 0.18.0-rc3
+
 * Mon Jan 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.16.0-3.afe9947
 - Updated to 0.16.0-rc3
 
