@@ -1,13 +1,13 @@
-%global commit      a411a4bc78eda4b92bc17e9777029f1111716135
+%global commit      c621db620530099f9d135ca72eedf21f37780622
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.18.0-rc3
+%global tag         0.18.0-rc4
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
 
 Name:          mesos
 Version:       0.18.0
-Release:       1.%{shortcommit}%{?dist}
+Release:       2.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -22,7 +22,6 @@ Source5:       %{name}-slave-env.sh
 #####################################
 # NOTE: Tracking against:
 # https://github.com/timothysc/mesos/tree/0.18.0-integ
-# diffed against 0.18.0-rc3
 ####################################
 Patch0:          mesos-0.18.0-integ.patch
 
@@ -41,7 +40,6 @@ BuildRequires:  gperftools-devel
 BuildRequires:  libev-source
 BuildRequires:  leveldb-devel
 BuildRequires:  protobuf-devel
-BuildRequires:  python-boto
 BuildRequires:  python-setuptools
 BuildRequires:  protobuf-python
 BuildRequires:  protobuf-java
@@ -49,10 +47,10 @@ BuildRequires:  python2-devel
 BuildRequires:  zookeeper-lib-devel
 BuildRequires:  openssl-devel
 BuildRequires:  cyrus-sasl-devel
-BuildRequires:  java-devel
 BuildRequires:  systemd
 
 Requires: protobuf-python
+Requires: python-boto
 
 ######################################
 # NOTE: arm has no planned support upstream
@@ -175,6 +173,7 @@ install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/%{name}
 install -m 0644 %{SOURCE5} %{buildroot}%{_sysconfdir}/%{name}
 
 mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
+mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 
@@ -205,6 +204,7 @@ cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
 %{_sysconfdir}/%{name}/*.template
 %{python_sitelib}/%{name}/
 %attr(0755,mesos,mesos) %{_var}/log/%{name}/
+%attr(0755,mesos,mesos) %{_var}/lib/%{name}/
 %config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
 %config(noreplace) %{_sysconfdir}/%{name}/*env.sh
 %{_unitdir}/%{name}*.service
@@ -251,10 +251,14 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Fri Mar 21 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-2.c621db6
+- Updated to 0.18.0-rc4
+- Fixed MESOS-1126 - dlopen libjvm.so
+
 * Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b
 - Updated to 0.18.0-rc3
-- Included subpackaging around language bindings (Java & Python)
-- Imporved systemd integration 
+- Included sub-packaging around language bindings (Java & Python)
+- Improved systemd integration 
 - Itegration to rebuild libev-source w/-DEV_CHILD_ENABLE=0
 
 * Mon Jan 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.16.0-3.afe9947

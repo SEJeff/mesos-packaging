@@ -35119,10 +35119,10 @@ index 3521bd5..0000000
 -}
 diff --git a/3rdparty/libprocess/src/tests/subprocess_tests.cpp b/3rdparty/libprocess/src/tests/subprocess_tests.cpp
 deleted file mode 100644
-index e720176..0000000
+index d15d4d1..0000000
 --- a/3rdparty/libprocess/src/tests/subprocess_tests.cpp
 +++ /dev/null
-@@ -1,233 +0,0 @@
+@@ -1,280 +0,0 @@
 -#include <signal.h>
 -
 -#include <gmock/gmock.h>
@@ -35355,6 +35355,53 @@ index e720176..0000000
 -  EXPECT_EQ("hello world\n", read.get());
 -
 -  Clock::resume();
+-}
+-
+-
+-TEST(Subprocess, env)
+-{
+-  Clock::pause();
+-
+-  // Simple envvar
+-  Try<Subprocess> s =
+-      subprocess("/usr/bin/env MESSAGE=hello bash -c 'echo $MESSAGE'");
+-  ASSERT_SOME(s);
+-  ASSERT_SOME(os::nonblock(s.get().out()));
+-  AWAIT_EXPECT_EQ("hello\n", io::read(s.get().out()));
+-
+-  // Advance time until the reaper reaps the subprocess.
+-  while (s.get().status().isPending()) {
+-    Clock::advance(Seconds(1));
+-    Clock::settle();
+-  }
+-
+-  AWAIT_ASSERT_READY(s.get().status());
+-  ASSERT_SOME(s.get().status().get());
+-  int status = s.get().status().get().get();
+-
+-  ASSERT_TRUE(WIFEXITED(status));
+-  ASSERT_EQ(0, WEXITSTATUS(status));
+-
+-
+-  // Spaces and quotes
+-  s = subprocess(
+-      "/usr/bin/env MESSAGE=\"hello world\" bash -c 'echo $MESSAGE'");
+-  ASSERT_SOME(s);
+-  ASSERT_SOME(os::nonblock(s.get().out()));
+-  AWAIT_EXPECT_EQ("hello world\n", io::read(s.get().out()));
+-
+-  // Advance time until the reaper reaps the subprocess.
+-  while (s.get().status().isPending()) {
+-    Clock::advance(Seconds(1));
+-    Clock::settle();
+-  }
+-
+-  AWAIT_ASSERT_READY(s.get().status());
+-  ASSERT_SOME(s.get().status().get());
+-  status = s.get().status().get().get();
+-
+-  ASSERT_TRUE(WIFEXITED(status));
+-  ASSERT_EQ(0, WEXITSTATUS(status));
 -}
 diff --git a/3rdparty/libprocess/src/tests/time_tests.cpp b/3rdparty/libprocess/src/tests/time_tests.cpp
 deleted file mode 100644
@@ -35869,7 +35916,7 @@ index ed0bc36..de6dc73 100755
  # Note that we don't use '--no-recursive' because older versions of
  # autoconf/autoreconf bail with that option. Unfortunately this means
 diff --git a/configure.ac b/configure.ac
-index 4f988a9..91e9e15 100644
+index 8431fdc..0f60c10 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -74,12 +74,10 @@ ac_configure_args="$ac_configure_args_post"
@@ -35901,9 +35948,9 @@ index 4f988a9..91e9e15 100644
 -             [], [with_included_zookeeper=yes])
 -
  AC_ARG_WITH([cxx11],
-             AS_HELP_STRING([--with-cxx11],
-                            [builds Mesos using C++11]),
-             [], [with_cxx11=no])
+             AS_HELP_STRING([--without-cxx11],
+                            [builds Mesos without C++11 support (deprecated)]),
+             [], [with_cxx11=yes])
  
 -# TODO(benh): Support --without-included-protobuf,
 -# --without-included-glog, etc. Doing this for protobuf is
@@ -35921,7 +35968,16 @@ index 4f988a9..91e9e15 100644
  
  AC_ARG_VAR([JAVA_HOME], [location of Java Development Kit (JDK)])
  
-@@ -165,7 +157,7 @@ case "${target_os}" in
+@@ -155,6 +147,8 @@ AC_ARG_VAR([JAVA_CPPFLAGS], [preprocessor flags for JNI])
+ 
+ AC_ARG_VAR([JAVA_LDFLAGS], [linker flags for JNI])
+ 
++AC_ARG_VAR([JAVA_JVM_LIBRARY], [full path to libjvm.so])
++
+ AC_ARG_VAR([PYTHON], [which Python interpreter to use])
+ 
+ 
+@@ -165,7 +159,7 @@ case "${target_os}" in
      echo Setting up build environment for ${target_cpu} ${target_os}
      echo ===========================================================
      OS_NAME=linux
@@ -35930,7 +35986,34 @@ index 4f988a9..91e9e15 100644
      ;;
    darwin*)
      echo ===========================================================
-@@ -557,7 +549,7 @@ There are two possible workarounds for this issue:
+@@ -276,7 +270,7 @@ __EOF__
+ 
+   # Try to compile and link via libtool (the one we generate).
+   ./libtool --tag=CXX --mode=link $CXX -Wall -Werror $JAVA_CPPFLAGS \
+-    -o conftest conftest.cpp $JAVA_LDFLAGS >&5
++    -o conftest conftest.cpp $JAVA_LDFLAGS $JAVA_TEST_LDFLAGS >&5
+ 
+   if test $? != 0; then
+     rm -f conftest # Cleanup after ourselves.
+@@ -344,13 +338,16 @@ __EOF__
+   if test -z "$JAVA_LDFLAGS"; then
+     if test "$OS_NAME" = "darwin"; then
+       JAVA_LDFLAGS="-framework JavaVM"
++      #Review TODO - JAVA_JVM_LIBRARY=??
+     elif test "$OS_NAME" = "linux"; then
+       JAVA_LDFLAGS=""
+       for arch in amd64 i386; do
+         dir="$JAVA_HOME/jre/lib/$arch/server"
+         if test -e "$dir"; then
+           # Note that these are libtool specific flags.
+-          JAVA_LDFLAGS="-L$dir -R$dir -Wl,-ljvm"
++          JAVA_JVM_LIBRARY=$dir/libjvm.so
++          JAVA_LDFLAGS="-L$dir -R$dir"
++          JAVA_TEST_LDFLAGS="-Wl,-ljvm"
+           break;
+           fi
+       done
+@@ -557,7 +554,7 @@ There are two possible workarounds for this issue:
    PYTHON_EGG_POSTFIX=`$PYTHON -c \
      'import sys; \
       from distutils.util import get_platform; \
@@ -35939,7 +36022,7 @@ index 4f988a9..91e9e15 100644
  
    PYTHON_EGG_PUREPY_POSTFIX=`$PYTHON -c \
      'import sys; \
-@@ -575,7 +567,10 @@ There are two possible workarounds for this issue:
+@@ -575,7 +572,10 @@ There are two possible workarounds for this issue:
    AC_SUBST([PYTHON]) # Used by the example shell scripts and src/Makefile.am.
  
    AC_DEFINE([MESOS_HAS_PYTHON])
@@ -35951,7 +36034,7 @@ index 4f988a9..91e9e15 100644
    has_python=yes
  fi
  
-@@ -596,10 +591,6 @@ libcurl is required for mesos to build.
+@@ -596,10 +596,6 @@ libcurl is required for mesos to build.
  ])])
  
  
@@ -35962,7 +36045,7 @@ index 4f988a9..91e9e15 100644
  # Check if we should/can build with C++11.
  if test "x$with_cxx11" = "xyes"; then
    AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
-@@ -621,16 +612,90 @@ if test "x$with_cxx11" = "xyes"; then
+@@ -622,16 +618,90 @@ if test "x$with_cxx11" = "xyes"; then
    CONFIGURE_ARGS="$CONFIGURE_ARGS CXXFLAGS='$CXXFLAGS'"
  fi
  
@@ -55930,7 +56013,7 @@ index 0000000..06d68d5
 +libdir=@libdir@
 +
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 848023c..a88dce0 100644
+index 500561c..937f3bc 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -19,31 +19,14 @@
@@ -56237,7 +56320,7 @@ index 848023c..a88dce0 100644
  
  mesos_tests_SOURCES =				\
    tests/allocator_tests.cpp			\
-@@ -874,15 +909,16 @@ mesos_tests_SOURCES =				\
+@@ -875,15 +910,16 @@ mesos_tests_SOURCES =				\
    tests/state_tests.cpp				\
    tests/status_update_manager_tests.cpp		\
    tests/utils.cpp				\
@@ -56258,14 +56341,12 @@ index 848023c..a88dce0 100644
  
  mesos_tests_DEPENDENCIES = # Initialized to allow += below.
  
-@@ -940,8 +976,8 @@ dist_check_SCRIPTS +=							\
- # runner that ships with newer versions of autotools.
+@@ -942,7 +978,7 @@ dist_check_SCRIPTS +=							\
  # See the following discussion for the workaround:
  # http://lists.gnu.org/archive/html/automake/2013-01/msg00051.html
--check-local: mesos-tests
+ check-local: mesos-tests
 -	./mesos-tests
-+check-local: mesos-tests lptests
-+	./lptests && ./mesos-tests 
++	./lptests && JAVA_JVM_LIBRARY=$(JAVA_JVM_LIBRARY) ./mesos-tests
  
  clean-local: clean-java clean-python
  
@@ -56464,6 +56545,126 @@ index c4683b9..b959e27 100644
 -PYTHONPATH="${DISTRIBUTE_EGG}:${MESOS_EGG}:${PROTOBUF_EGG}" \
 +PYTHONPATH="${MESOS_EGG}" \
    exec ${PYTHON} ${SCRIPT} "${@}"
+diff --git a/src/java/jni/construct.cpp b/src/java/jni/construct.cpp
+index 0d0207f..a01532d 100644
+--- a/src/java/jni/construct.cpp
++++ b/src/java/jni/construct.cpp
+@@ -16,8 +16,6 @@
+  * limitations under the License.
+  */
+ 
+-#include <jni.h>
+-
+ #include <glog/logging.h>
+ 
+ #include <google/protobuf/io/zero_copy_stream_impl.h>
+diff --git a/src/java/jni/convert.cpp b/src/java/jni/convert.cpp
+index 9f99031..f0e9512 100644
+--- a/src/java/jni/convert.cpp
++++ b/src/java/jni/convert.cpp
+@@ -16,8 +16,6 @@
+  * limitations under the License.
+  */
+ 
+-#include <jni.h>
+-
+ #include <string>
+ #include <assert.h>
+ 
+diff --git a/src/java/jni/org_apache_mesos_Log.cpp b/src/java/jni/org_apache_mesos_Log.cpp
+index 36c636d..f19e0f4 100644
+--- a/src/java/jni/org_apache_mesos_Log.cpp
++++ b/src/java/jni/org_apache_mesos_Log.cpp
+@@ -16,7 +16,7 @@
+  * limitations under the License.
+  */
+ 
+-#include <jni.h>
++#include <stdint.h>
+ 
+ #include <process/timeout.hpp>
+ 
+diff --git a/src/java/jni/org_apache_mesos_state_AbstractState.cpp b/src/java/jni/org_apache_mesos_state_AbstractState.cpp
+index 2ee0b1b..6e57f2f 100644
+--- a/src/java/jni/org_apache_mesos_state_AbstractState.cpp
++++ b/src/java/jni/org_apache_mesos_state_AbstractState.cpp
+@@ -1,5 +1,3 @@
+-#include <jni.h>
+-
+ #include <string>
+ #include <vector>
+ 
+diff --git a/src/java/jni/org_apache_mesos_state_LevelDBState.cpp b/src/java/jni/org_apache_mesos_state_LevelDBState.cpp
+index 30f6309..cb7dc50 100644
+--- a/src/java/jni/org_apache_mesos_state_LevelDBState.cpp
++++ b/src/java/jni/org_apache_mesos_state_LevelDBState.cpp
+@@ -1,5 +1,3 @@
+-#include <jni.h>
+-
+ #include <string>
+ 
+ #include "state/leveldb.hpp"
+diff --git a/src/java/jni/org_apache_mesos_state_ZooKeeperState.cpp b/src/java/jni/org_apache_mesos_state_ZooKeeperState.cpp
+index c40e685..37f6028 100644
+--- a/src/java/jni/org_apache_mesos_state_ZooKeeperState.cpp
++++ b/src/java/jni/org_apache_mesos_state_ZooKeeperState.cpp
+@@ -1,5 +1,3 @@
+-#include <jni.h>
+-
+ #include <string>
+ 
+ #include <stout/duration.hpp>
+diff --git a/src/jvm/jvm.cpp b/src/jvm/jvm.cpp
+index 6eb3a34..15af709 100644
+--- a/src/jvm/jvm.cpp
++++ b/src/jvm/jvm.cpp
+@@ -1,5 +1,5 @@
+-#include <jni.h>
+ #include <stdarg.h>
++#include <dlfcn.h>
+ 
+ #include <glog/logging.h>
+ 
+@@ -11,6 +11,7 @@
+ 
+ #include <stout/exit.hpp>
+ #include <stout/foreach.hpp>
++#include <stout/os.hpp>
+ 
+ #include "jvm/jvm.hpp"
+ 
+@@ -20,6 +21,8 @@
+ // Static storage and initialization.
+ Jvm* Jvm::instance = NULL;
+ 
++// typedef function pointer to JNI
++typedef jint (*fnptr_JNI_CreateJavaVM)(JavaVM**, void**, void*);
+ 
+ Try<Jvm*> Jvm::create(
+     const std::vector<std::string>& _options,
+@@ -58,8 +61,21 @@ Try<Jvm*> Jvm::create(
+ 
+   JavaVM* jvm = NULL;
+   JNIEnv* env = NULL;
++  std::string libJvmPath = os::getenv("JAVA_JVM_LIBRARY");
+ 
+-  int result = JNI_CreateJavaVM(&jvm, JNIENV_CAST(&env), &vmArgs);
++  void * hdl = dlopen ( libJvmPath.c_str(), RTLD_NOW );
++
++  if (!hdl) {
++    return Error(dlerror());
++  }
++
++  fnptr_JNI_CreateJavaVM fn_JNI_CreateJavaVM = (fnptr_JNI_CreateJavaVM)dlsym ( hdl, "JNI_CreateJavaVM" );
++
++  if (!fn_JNI_CreateJavaVM) {
++    return Error(dlerror());
++  }
++
++  int result = fn_JNI_CreateJavaVM(&jvm, JNIENV_CAST(&env), &vmArgs);
+ 
+   if (result == JNI_ERR) {
+     return Error("Failed to create JVM!");
 diff --git a/src/libprocess/config.hpp b/src/libprocess/config.hpp
 new file mode 100644
 index 0000000..cbaf41d
@@ -66000,10 +66201,10 @@ index 0000000..3521bd5
 +}
 diff --git a/src/libprocess/tests/subprocess_tests.cpp b/src/libprocess/tests/subprocess_tests.cpp
 new file mode 100644
-index 0000000..e720176
+index 0000000..d15d4d1
 --- /dev/null
 +++ b/src/libprocess/tests/subprocess_tests.cpp
-@@ -0,0 +1,233 @@
+@@ -0,0 +1,280 @@
 +#include <signal.h>
 +
 +#include <gmock/gmock.h>
@@ -66236,6 +66437,53 @@ index 0000000..e720176
 +  EXPECT_EQ("hello world\n", read.get());
 +
 +  Clock::resume();
++}
++
++
++TEST(Subprocess, env)
++{
++  Clock::pause();
++
++  // Simple envvar
++  Try<Subprocess> s =
++      subprocess("/usr/bin/env MESSAGE=hello bash -c 'echo $MESSAGE'");
++  ASSERT_SOME(s);
++  ASSERT_SOME(os::nonblock(s.get().out()));
++  AWAIT_EXPECT_EQ("hello\n", io::read(s.get().out()));
++
++  // Advance time until the reaper reaps the subprocess.
++  while (s.get().status().isPending()) {
++    Clock::advance(Seconds(1));
++    Clock::settle();
++  }
++
++  AWAIT_ASSERT_READY(s.get().status());
++  ASSERT_SOME(s.get().status().get());
++  int status = s.get().status().get().get();
++
++  ASSERT_TRUE(WIFEXITED(status));
++  ASSERT_EQ(0, WEXITSTATUS(status));
++
++
++  // Spaces and quotes
++  s = subprocess(
++      "/usr/bin/env MESSAGE=\"hello world\" bash -c 'echo $MESSAGE'");
++  ASSERT_SOME(s);
++  ASSERT_SOME(os::nonblock(s.get().out()));
++  AWAIT_EXPECT_EQ("hello world\n", io::read(s.get().out()));
++
++  // Advance time until the reaper reaps the subprocess.
++  while (s.get().status().isPending()) {
++    Clock::advance(Seconds(1));
++    Clock::settle();
++  }
++
++  AWAIT_ASSERT_READY(s.get().status());
++  ASSERT_SOME(s.get().status().get());
++  status = s.get().status().get().get();
++
++  ASSERT_TRUE(WIFEXITED(status));
++  ASSERT_EQ(0, WEXITSTATUS(status));
 +}
 diff --git a/src/libprocess/tests/time_tests.cpp b/src/libprocess/tests/time_tests.cpp
 new file mode 100644
