@@ -1,6 +1,6 @@
-%global commit      c621db620530099f9d135ca72eedf21f37780622
+%global commit      185dba5d8d52034ac6a8e29c2686f0f7dc4cf102
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.18.0-rc4
+%global tag         0.18.0-rc6
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
@@ -251,8 +251,8 @@ exit 0
 /sbin/ldconfig
 
 %changelog
-* Fri Mar 21 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-2.c621db6
-- Updated to 0.18.0-rc4
+* Thu Apr 3 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-2.185dba5
+- Updated to 0.18.0-rc6
 - Fixed MESOS-1126 - dlopen libjvm.so
 
 * Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b

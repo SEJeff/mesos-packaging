@@ -1990,7 +1990,7 @@ index d64e2a4..0000000
 -#endif // __STOUT_FOREACH_HPP__
 diff --git a/3rdparty/libprocess/3rdparty/stout/include/stout/format.hpp b/3rdparty/libprocess/3rdparty/stout/include/stout/format.hpp
 deleted file mode 100644
-index 3eadaef..0000000
+index d6b070f..0000000
 --- a/3rdparty/libprocess/3rdparty/stout/include/stout/format.hpp
 +++ /dev/null
 @@ -1,442 +0,0 @@
@@ -2042,7 +2042,7 @@ index 3eadaef..0000000
 -namespace internal {
 -
 -Try<std::string> format(const std::string& fmt, va_list args);
--Try<std::string> format(const std::string& fmt, ...);
+-Try<std::string> format(const std::string fmt, ...);
 -
 -template <typename T, bool b>
 -struct stringify;
@@ -2392,7 +2392,7 @@ index 3eadaef..0000000
 -}
 -
 -
--inline Try<std::string> format(const std::string& fmt, ...)
+-inline Try<std::string> format(const std::string fmt, ...)
 -{
 -  va_list args;
 -  va_start(args, fmt);
@@ -4164,7 +4164,7 @@ index 3305d13..0000000
 -#endif // __STOUT_OPTION_HPP__
 diff --git a/3rdparty/libprocess/3rdparty/stout/include/stout/os.hpp b/3rdparty/libprocess/3rdparty/stout/include/stout/os.hpp
 deleted file mode 100644
-index bba6f43..0000000
+index 20d028f..0000000
 --- a/3rdparty/libprocess/3rdparty/stout/include/stout/os.hpp
 +++ /dev/null
 @@ -1,1160 +0,0 @@
@@ -4894,7 +4894,7 @@ index bba6f43..0000000
 -// Runs a shell command formatted with varargs and return the return value
 -// of the command. Optionally, the output is returned via an argument.
 -// TODO(vinod): Pass an istream object that can provide input to the command.
--inline Try<int> shell(std::ostream* os, const std::string& fmt, ...)
+-inline Try<int> shell(std::ostream* os, const std::string fmt, ...)
 -{
 -  va_list args;
 -  va_start(args, fmt);
@@ -6219,10 +6219,10 @@ index e916f02..0000000
 -#endif // __STOUT_OS_LS_HPP__
 diff --git a/3rdparty/libprocess/3rdparty/stout/include/stout/os/osx.hpp b/3rdparty/libprocess/3rdparty/stout/include/stout/os/osx.hpp
 deleted file mode 100644
-index f5bd1c9..0000000
+index d8bf009..0000000
 --- a/3rdparty/libprocess/3rdparty/stout/include/stout/os/osx.hpp
 +++ /dev/null
-@@ -1,178 +0,0 @@
+@@ -1,191 +0,0 @@
 -/**
 - * Licensed under the Apache License, Version 2.0 (the "License");
 - * you may not use this file except in compliance with the License.
@@ -6285,6 +6285,10 @@ index f5bd1c9..0000000
 -  // proc_pidpath() instead.
 -  Option<std::string> command = None();
 -
+-  // Alternative implemenations using KERN_PROCARGS2:
+-  // https://bitbucket.org/flub/psi-win32/src/d38f288de3b8/src/arch/macosx/macosx_process.c#cl-552
+-  // https://gist.github.com/nonowarn/770696
+-
 -#ifdef KERN_PROCARGS2
 -  // Looking at the source code of XNU (the Darwin kernel for OS X:
 -  // www.opensource.apple.com/source/xnu/xnu-1699.24.23/bsd/kern/kern_sysctl.c),
@@ -6325,7 +6329,16 @@ index f5bd1c9..0000000
 -            // code will end up just keeping 'command' None (i.e.,
 -            // tokens.size() will be <= 0).
 -            tokens.erase(tokens.begin()); // Remove path.
--            tokens.erase(tokens.begin() + argc, tokens.end());
+-
+-            // In practice it appeared that we might get an 'argc'
+-            // which is greater than 'tokens.size()' which caused us
+-            // to get an invalid iterator from 'tokens.begin() +
+-            // argc', thus we now check that condition here.
+-            if (argc <= static_cast<int>(tokens.size())) {
+-              tokens.erase(tokens.begin() + argc, tokens.end());
+-            }
+-
+-            // If any tokens are left, consider them the command!
 -            if (tokens.size() > 0) {
 -              command = strings::join(" ", tokens);
 -            }
@@ -35916,7 +35929,7 @@ index ed0bc36..de6dc73 100755
  # Note that we don't use '--no-recursive' because older versions of
  # autoconf/autoreconf bail with that option. Unfortunately this means
 diff --git a/configure.ac b/configure.ac
-index 8431fdc..0f60c10 100644
+index 5a23883..5746513 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -74,12 +74,10 @@ ac_configure_args="$ac_configure_args_post"
@@ -35976,17 +35989,17 @@ index 8431fdc..0f60c10 100644
 +
  AC_ARG_VAR([PYTHON], [which Python interpreter to use])
  
- 
-@@ -165,7 +159,7 @@ case "${target_os}" in
-     echo Setting up build environment for ${target_cpu} ${target_os}
-     echo ===========================================================
+ AC_MSG_NOTICE([Setting up build environment for ${target_cpu} ${target_os}])
+@@ -162,7 +156,7 @@ AC_MSG_NOTICE([Setting up build environment for ${target_cpu} ${target_os}])
+ case "${target_os}" in
+   linux*)
      OS_NAME=linux
 -    LIBS="$LIBS -lrt"
 +    #LIBS="$LIBS -lrt"
      ;;
    darwin*)
-     echo ===========================================================
-@@ -276,7 +270,7 @@ __EOF__
+     OS_NAME=darwin
+@@ -288,7 +282,7 @@ __EOF__
  
    # Try to compile and link via libtool (the one we generate).
    ./libtool --tag=CXX --mode=link $CXX -Wall -Werror $JAVA_CPPFLAGS \
@@ -35995,7 +36008,7 @@ index 8431fdc..0f60c10 100644
  
    if test $? != 0; then
      rm -f conftest # Cleanup after ourselves.
-@@ -344,13 +338,16 @@ __EOF__
+@@ -356,13 +350,16 @@ __EOF__
    if test -z "$JAVA_LDFLAGS"; then
      if test "$OS_NAME" = "darwin"; then
        JAVA_LDFLAGS="-framework JavaVM"
@@ -36013,7 +36026,7 @@ index 8431fdc..0f60c10 100644
            break;
            fi
        done
-@@ -557,7 +554,7 @@ There are two possible workarounds for this issue:
+@@ -569,7 +566,7 @@ There are two possible workarounds for this issue:
    PYTHON_EGG_POSTFIX=`$PYTHON -c \
      'import sys; \
       from distutils.util import get_platform; \
@@ -36022,7 +36035,7 @@ index 8431fdc..0f60c10 100644
  
    PYTHON_EGG_PUREPY_POSTFIX=`$PYTHON -c \
      'import sys; \
-@@ -575,7 +572,10 @@ There are two possible workarounds for this issue:
+@@ -599,7 +596,10 @@ There are two possible workarounds for this issue:
    AC_SUBST([PYTHON]) # Used by the example shell scripts and src/Makefile.am.
  
    AC_DEFINE([MESOS_HAS_PYTHON])
@@ -36034,7 +36047,7 @@ index 8431fdc..0f60c10 100644
    has_python=yes
  fi
  
-@@ -596,10 +596,6 @@ libcurl is required for mesos to build.
+@@ -620,10 +620,6 @@ libcurl is required for mesos to build.
  ])])
  
  
@@ -36045,7 +36058,7 @@ index 8431fdc..0f60c10 100644
  # Check if we should/can build with C++11.
  if test "x$with_cxx11" = "xyes"; then
    AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
-@@ -622,16 +618,90 @@ if test "x$with_cxx11" = "xyes"; then
+@@ -646,16 +642,90 @@ if test "x$with_cxx11" = "xyes"; then
    CONFIGURE_ARGS="$CONFIGURE_ARGS CXXFLAGS='$CXXFLAGS'"
  fi
  
@@ -48391,7 +48404,7 @@ index 0000000..d64e2a4
 +#endif // __STOUT_FOREACH_HPP__
 diff --git a/include/mesos/stout/format.hpp b/include/mesos/stout/format.hpp
 new file mode 100644
-index 0000000..3eadaef
+index 0000000..d6b070f
 --- /dev/null
 +++ b/include/mesos/stout/format.hpp
 @@ -0,0 +1,442 @@
@@ -48443,7 +48456,7 @@ index 0000000..3eadaef
 +namespace internal {
 +
 +Try<std::string> format(const std::string& fmt, va_list args);
-+Try<std::string> format(const std::string& fmt, ...);
++Try<std::string> format(const std::string fmt, ...);
 +
 +template <typename T, bool b>
 +struct stringify;
@@ -48793,7 +48806,7 @@ index 0000000..3eadaef
 +}
 +
 +
-+inline Try<std::string> format(const std::string& fmt, ...)
++inline Try<std::string> format(const std::string fmt, ...)
 +{
 +  va_list args;
 +  va_start(args, fmt);
@@ -50565,7 +50578,7 @@ index 0000000..3305d13
 +#endif // __STOUT_OPTION_HPP__
 diff --git a/include/mesos/stout/os.hpp b/include/mesos/stout/os.hpp
 new file mode 100644
-index 0000000..bba6f43
+index 0000000..20d028f
 --- /dev/null
 +++ b/include/mesos/stout/os.hpp
 @@ -0,0 +1,1160 @@
@@ -51295,7 +51308,7 @@ index 0000000..bba6f43
 +// Runs a shell command formatted with varargs and return the return value
 +// of the command. Optionally, the output is returned via an argument.
 +// TODO(vinod): Pass an istream object that can provide input to the command.
-+inline Try<int> shell(std::ostream* os, const std::string& fmt, ...)
++inline Try<int> shell(std::ostream* os, const std::string fmt, ...)
 +{
 +  va_list args;
 +  va_start(args, fmt);
@@ -52620,10 +52633,10 @@ index 0000000..e916f02
 +#endif // __STOUT_OS_LS_HPP__
 diff --git a/include/mesos/stout/os/osx.hpp b/include/mesos/stout/os/osx.hpp
 new file mode 100644
-index 0000000..f5bd1c9
+index 0000000..d8bf009
 --- /dev/null
 +++ b/include/mesos/stout/os/osx.hpp
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,191 @@
 +/**
 + * Licensed under the Apache License, Version 2.0 (the "License");
 + * you may not use this file except in compliance with the License.
@@ -52686,6 +52699,10 @@ index 0000000..f5bd1c9
 +  // proc_pidpath() instead.
 +  Option<std::string> command = None();
 +
++  // Alternative implemenations using KERN_PROCARGS2:
++  // https://bitbucket.org/flub/psi-win32/src/d38f288de3b8/src/arch/macosx/macosx_process.c#cl-552
++  // https://gist.github.com/nonowarn/770696
++
 +#ifdef KERN_PROCARGS2
 +  // Looking at the source code of XNU (the Darwin kernel for OS X:
 +  // www.opensource.apple.com/source/xnu/xnu-1699.24.23/bsd/kern/kern_sysctl.c),
@@ -52726,7 +52743,16 @@ index 0000000..f5bd1c9
 +            // code will end up just keeping 'command' None (i.e.,
 +            // tokens.size() will be <= 0).
 +            tokens.erase(tokens.begin()); // Remove path.
-+            tokens.erase(tokens.begin() + argc, tokens.end());
++
++            // In practice it appeared that we might get an 'argc'
++            // which is greater than 'tokens.size()' which caused us
++            // to get an invalid iterator from 'tokens.begin() +
++            // argc', thus we now check that condition here.
++            if (argc <= static_cast<int>(tokens.size())) {
++              tokens.erase(tokens.begin() + argc, tokens.end());
++            }
++
++            // If any tokens are left, consider them the command!
 +            if (tokens.size() > 0) {
 +              command = strings::join(" ", tokens);
 +            }
@@ -56013,7 +56039,7 @@ index 0000000..06d68d5
 +libdir=@libdir@
 +
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 500561c..937f3bc 100644
+index 5e7ed72..937f3bc 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -19,31 +19,14 @@
@@ -56265,11 +56291,12 @@ index 500561c..937f3bc 100644
  # TODO(Charles Reiss): Figure out how to do a proper out-of-source
  # build of these Python eggs. Right now we copy the entire source
  # directories into the build directory.
-@@ -779,13 +784,12 @@ $(MESOS_EGG): python/setup.py $(srcdir)/python/src/mesos.py		\
+@@ -779,14 +784,12 @@ $(MESOS_EGG): python/setup.py $(srcdir)/python/src/mesos.py		\
  	  cp -pf $(srcdir)/python/src/mesos.py python/src;		\
  	fi
  	@LIBS="$(LIBS)" CC="$(CC)" CXX="$(CXX)"				\
--	  PYTHONPATH=$(DISTRIBUTE_EGG) $(PYTHON) python/setup.py bdist_egg
+-	CFLAGS="$(PYTHON_CFLAGS)" CPPFLAGS="$(PYTHON_CPPFLAGS)"		\
+-	PYTHONPATH=$(DISTRIBUTE_EGG) $(PYTHON) python/setup.py bdist_egg
 +	  $(PYTHON) python/setup.py bdist_egg
  
  CLEANFILES += $(MESOS_EGG) python/build/temp.*/native/*.o python/build/lib.*/*
@@ -56280,7 +56307,7 @@ index 500561c..937f3bc 100644
  
  # Note that to clean up the copied Python files we have to 'chmod u+w
  # python/native' because creating a distribution can eliminate write
-@@ -840,7 +844,38 @@ balloon_executor_SOURCES = examples/balloon_executor.cpp
+@@ -841,7 +844,38 @@ balloon_executor_SOURCES = examples/balloon_executor.cpp
  balloon_executor_CPPFLAGS = $(MESOS_CPPFLAGS)
  balloon_executor_LDADD = libmesos.la
  
@@ -56320,7 +56347,7 @@ index 500561c..937f3bc 100644
  
  mesos_tests_SOURCES =				\
    tests/allocator_tests.cpp			\
-@@ -875,15 +910,16 @@ mesos_tests_SOURCES =				\
+@@ -876,15 +910,16 @@ mesos_tests_SOURCES =				\
    tests/state_tests.cpp				\
    tests/status_update_manager_tests.cpp		\
    tests/utils.cpp				\
@@ -56341,7 +56368,7 @@ index 500561c..937f3bc 100644
  
  mesos_tests_DEPENDENCIES = # Initialized to allow += below.
  
-@@ -942,7 +978,7 @@ dist_check_SCRIPTS +=							\
+@@ -943,7 +978,7 @@ dist_check_SCRIPTS +=							\
  # See the following discussion for the workaround:
  # http://lists.gnu.org/archive/html/automake/2013-01/msg00051.html
  check-local: mesos-tests
@@ -56615,7 +56642,7 @@ index c40e685..37f6028 100644
  
  #include <stout/duration.hpp>
 diff --git a/src/jvm/jvm.cpp b/src/jvm/jvm.cpp
-index 6eb3a34..15af709 100644
+index d3dfa75..3c38289 100644
 --- a/src/jvm/jvm.cpp
 +++ b/src/jvm/jvm.cpp
 @@ -1,5 +1,5 @@
@@ -68313,7 +68340,7 @@ index 02f00ef..a139c06 100644
  if os.path.exists(libprofiler):
    EXTRA_OBJECTS.append(libprofiler)
 diff --git a/src/tests/allocator_tests.cpp b/src/tests/allocator_tests.cpp
-index 31cc836..6f6fcdf 100644
+index a3a813e..d821736 100644
 --- a/src/tests/allocator_tests.cpp
 +++ b/src/tests/allocator_tests.cpp
 @@ -944,7 +944,7 @@ TYPED_TEST(AllocatorTest, OutOfOrderDispatch)
