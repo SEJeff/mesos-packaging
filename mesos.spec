@@ -54,6 +54,8 @@ BuildRequires: maven-plugin-bundle
 BuildRequires: exec-maven-plugin
 BuildRequires: maven-remote-resources-plugin
 BuildRequires: maven-site-plugin
+BuildRequires: protobuf-python
+BuildRequires: python-boto
 
 Requires: protobuf-python
 Requires: python-boto
@@ -189,12 +191,9 @@ mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_siteli
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 ######################
-# call out to xmvn.
+# install java bindings
 ######################
 %mvn_artifact src/java/%{name}.pom src/java/target/%{name}-%{version}.jar
-#mkdir -p %{buildroot}%{_mavenpomdir}
-#cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
-#cd src/java
 %mvn_install
 
 ############################################
