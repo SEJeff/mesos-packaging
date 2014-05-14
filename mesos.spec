@@ -54,6 +54,7 @@ BuildRequires: maven-plugin-bundle
 BuildRequires: maven-gpg-plugin
 BuildRequires: maven-clean-plugin
 BuildRequires: maven-shade-plugin
+BuildRequires: maven-dependency-plugin
 BuildRequires: exec-maven-plugin
 BuildRequires: maven-remote-resources-plugin
 BuildRequires: maven-site-plugin
