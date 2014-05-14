@@ -35929,7 +35929,7 @@ index ed0bc36..de6dc73 100755
  # Note that we don't use '--no-recursive' because older versions of
  # autoconf/autoreconf bail with that option. Unfortunately this means
 diff --git a/configure.ac b/configure.ac
-index 5a23883..5746513 100644
+index 4eab78a..1818072 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -74,12 +74,10 @@ ac_configure_args="$ac_configure_args_post"
@@ -36026,7 +36026,7 @@ index 5a23883..5746513 100644
            break;
            fi
        done
-@@ -569,7 +566,7 @@ There are two possible workarounds for this issue:
+@@ -575,7 +572,7 @@ There are two possible workarounds for this issue:
    PYTHON_EGG_POSTFIX=`$PYTHON -c \
      'import sys; \
       from distutils.util import get_platform; \
@@ -36035,7 +36035,7 @@ index 5a23883..5746513 100644
  
    PYTHON_EGG_PUREPY_POSTFIX=`$PYTHON -c \
      'import sys; \
-@@ -599,7 +596,10 @@ There are two possible workarounds for this issue:
+@@ -605,7 +602,10 @@ There are two possible workarounds for this issue:
    AC_SUBST([PYTHON]) # Used by the example shell scripts and src/Makefile.am.
  
    AC_DEFINE([MESOS_HAS_PYTHON])
@@ -36047,7 +36047,7 @@ index 5a23883..5746513 100644
    has_python=yes
  fi
  
-@@ -620,10 +620,6 @@ libcurl is required for mesos to build.
+@@ -626,10 +626,6 @@ libcurl is required for mesos to build.
  ])])
  
  
@@ -36058,7 +36058,7 @@ index 5a23883..5746513 100644
  # Check if we should/can build with C++11.
  if test "x$with_cxx11" = "xyes"; then
    AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
-@@ -646,16 +642,90 @@ if test "x$with_cxx11" = "xyes"; then
+@@ -652,16 +648,90 @@ if test "x$with_cxx11" = "xyes"; then
    CONFIGURE_ARGS="$CONFIGURE_ARGS CXXFLAGS='$CXXFLAGS'"
  fi
  
@@ -56039,7 +56039,7 @@ index 0000000..06d68d5
 +libdir=@libdir@
 +
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 5e7ed72..937f3bc 100644
+index 1e43123..6d2f85f 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -19,31 +19,14 @@
@@ -56251,17 +56251,19 @@ index 5e7ed72..937f3bc 100644
  
  # Binaries.
  sbin_PROGRAMS += mesos-master
-@@ -562,7 +589,8 @@ EXTRA_DIST += $(EXAMPLES_SOURCE)
+@@ -561,8 +588,9 @@ EXTRA_DIST += $(EXAMPLES_SOURCE)
+ 
  
  if HAS_JAVA
- # Protocol buffers JAR.
--PROTOBUF_JAR = ../protobuf-$(PROTOBUF_VERSION).jar
+-# Protobuf jar, copied there by Maven.
+-PROTOBUF_JAR = java/target/protobuf-java-$(PROTOBUF_VERSION).jar
++# Protocol buffers JAR.
 +# TODO: This should be searched for in configure
 +PROTOBUF_JAR =  /usr/share/java/protobuf.jar
  
- # TODO(charles): Move into 3rdparty/Makefile.am.
- $(PROTOBUF_JAR): # TODO(charles): Specify dependencies for the jar.
-@@ -735,29 +763,6 @@ EXTRA_DIST += python/src/mesos.py					\
+ $(MESOS_JAR): $(MESOS_JAR_SOURCE) $(MESOS_JAR_GENERATED) java/mesos.pom
+ 	@echo "Building mesos-$(PACKAGE_VERSION).jar ..."
+@@ -704,29 +732,6 @@ EXTRA_DIST += python/src/mesos.py					\
  	      python/native/proxy_scheduler.cpp				\
  	      python/native/proxy_scheduler.hpp
  
@@ -56291,7 +56293,7 @@ index 5e7ed72..937f3bc 100644
  # TODO(Charles Reiss): Figure out how to do a proper out-of-source
  # build of these Python eggs. Right now we copy the entire source
  # directories into the build directory.
-@@ -779,14 +784,12 @@ $(MESOS_EGG): python/setup.py $(srcdir)/python/src/mesos.py		\
+@@ -748,14 +753,12 @@ $(MESOS_EGG): python/setup.py $(srcdir)/python/src/mesos.py		\
  	  cp -pf $(srcdir)/python/src/mesos.py python/src;		\
  	fi
  	@LIBS="$(LIBS)" CC="$(CC)" CXX="$(CXX)"				\
@@ -56307,7 +56309,7 @@ index 5e7ed72..937f3bc 100644
  
  # Note that to clean up the copied Python files we have to 'chmod u+w
  # python/native' because creating a distribution can eliminate write
-@@ -841,7 +844,38 @@ balloon_executor_SOURCES = examples/balloon_executor.cpp
+@@ -810,7 +813,38 @@ balloon_executor_SOURCES = examples/balloon_executor.cpp
  balloon_executor_CPPFLAGS = $(MESOS_CPPFLAGS)
  balloon_executor_LDADD = libmesos.la
  
@@ -56347,7 +56349,7 @@ index 5e7ed72..937f3bc 100644
  
  mesos_tests_SOURCES =				\
    tests/allocator_tests.cpp			\
-@@ -876,15 +910,16 @@ mesos_tests_SOURCES =				\
+@@ -845,15 +879,16 @@ mesos_tests_SOURCES =				\
    tests/state_tests.cpp				\
    tests/status_update_manager_tests.cpp		\
    tests/utils.cpp				\
@@ -56368,7 +56370,7 @@ index 5e7ed72..937f3bc 100644
  
  mesos_tests_DEPENDENCIES = # Initialized to allow += below.
  
-@@ -943,7 +978,7 @@ dist_check_SCRIPTS +=							\
+@@ -912,7 +947,7 @@ dist_check_SCRIPTS +=							\
  # See the following discussion for the workaround:
  # http://lists.gnu.org/archive/html/automake/2013-01/msg00051.html
  check-local: mesos-tests
@@ -56491,14 +56493,14 @@ index ea5b26a..b88ab7a 100644
  # Find the list of slaves.
  SLAVES_FILE="${DEPLOY_DIR}/slaves"
 diff --git a/src/examples/java/test-framework.in b/src/examples/java/test-framework.in
-index bbdc1ed..21d4b38 100644
+index 9af48f9..9625268 100644
 --- a/src/examples/java/test-framework.in
 +++ b/src/examples/java/test-framework.in
 @@ -12,7 +12,8 @@ JAVA=${JAVA-${JAVA_HOME}/bin/java}
  # Use colors for errors.
  . ${MESOS_SOURCE_DIR}/support/colors.sh
  
--PROTOBUF_JAR=${MESOS_BUILD_DIR}/protobuf-2.5.0.jar
+-PROTOBUF_JAR=${MESOS_BUILD_DIR}/src/java/target/protobuf-java-2.5.0.jar
 +# TODO:tstclair - this should be discovered using --with
 +PROTOBUF_JAR=/usr/share/java/protobuf.jar
  
@@ -67012,10 +67014,10 @@ index 8a48bbb..0000000
 -} // namespace master {
 diff --git a/src/master/http.cpp b/src/master/http.cpp
 deleted file mode 100644
-index 966eed6..0000000
+index bef18c5..0000000
 --- a/src/master/http.cpp
 +++ /dev/null
-@@ -1,602 +0,0 @@
+@@ -1,624 +0,0 @@
 -/**
 - * Licensed to the Apache Software Foundation (ASF) under one
 - * or more contributor license agreements.  See the NOTICE file
@@ -67538,11 +67540,18 @@ index 966eed6..0000000
 -{
 -  static bool ascending(const Task* lhs, const Task* rhs)
 -  {
--    if (lhs->statuses().size() == 0) {
+-    size_t lhsSize = lhs->statuses().size();
+-    size_t rhsSize = rhs->statuses().size();
+-
+-    if ((lhsSize == 0) && (rhsSize == 0)) {
+-      return false;
+-    }
+-
+-    if (lhsSize == 0) {
 -      return true;
 -    }
 -
--    if (rhs->statuses().size() == 0) {
+-    if (rhsSize == 0) {
 -      return false;
 -    }
 -
@@ -67551,7 +67560,22 @@ index 966eed6..0000000
 -
 -  static bool descending(const Task* lhs, const Task* rhs)
 -  {
--    return !ascending(lhs, rhs);
+-    size_t lhsSize = lhs->statuses().size();
+-    size_t rhsSize = rhs->statuses().size();
+-
+-    if ((lhsSize == 0) && (rhsSize == 0)) {
+-      return false;
+-    }
+-
+-    if (rhsSize == 0) {
+-      return true;
+-    }
+-
+-    if (lhsSize == 0) {
+-      return false;
+-    }
+-
+-    return (lhs->statuses(0).timestamp() > rhs->statuses(0).timestamp());
 -  }
 -};
 -
@@ -67668,10 +67692,10 @@ index 0000000..8a48bbb
 +} // namespace master {
 diff --git a/src/master/m_http.cpp b/src/master/m_http.cpp
 new file mode 100644
-index 0000000..966eed6
+index 0000000..bef18c5
 --- /dev/null
 +++ b/src/master/m_http.cpp
-@@ -0,0 +1,602 @@
+@@ -0,0 +1,624 @@
 +/**
 + * Licensed to the Apache Software Foundation (ASF) under one
 + * or more contributor license agreements.  See the NOTICE file
@@ -68194,11 +68218,18 @@ index 0000000..966eed6
 +{
 +  static bool ascending(const Task* lhs, const Task* rhs)
 +  {
-+    if (lhs->statuses().size() == 0) {
++    size_t lhsSize = lhs->statuses().size();
++    size_t rhsSize = rhs->statuses().size();
++
++    if ((lhsSize == 0) && (rhsSize == 0)) {
++      return false;
++    }
++
++    if (lhsSize == 0) {
 +      return true;
 +    }
 +
-+    if (rhs->statuses().size() == 0) {
++    if (rhsSize == 0) {
 +      return false;
 +    }
 +
@@ -68207,7 +68238,22 @@ index 0000000..966eed6
 +
 +  static bool descending(const Task* lhs, const Task* rhs)
 +  {
-+    return !ascending(lhs, rhs);
++    size_t lhsSize = lhs->statuses().size();
++    size_t rhsSize = rhs->statuses().size();
++
++    if ((lhsSize == 0) && (rhsSize == 0)) {
++      return false;
++    }
++
++    if (rhsSize == 0) {
++      return true;
++    }
++
++    if (lhsSize == 0) {
++      return false;
++    }
++
++    return (lhs->statuses(0).timestamp() > rhs->statuses(0).timestamp());
 +  }
 +};
 +

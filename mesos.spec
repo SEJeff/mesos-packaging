@@ -1,13 +1,13 @@
-%global commit      185dba5d8d52034ac6a8e29c2686f0f7dc4cf102
+%global commit      453b973bf93d55a3a8e5d7059e99c00ea460530e
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.18.0-rc6
+%global tag         0.18.2-rc1
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
 
 Name:          mesos
-Version:       0.18.0
-Release:       2.%{shortcommit}%{?dist}
+Version:       0.18.2
+Release:       1.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -21,9 +21,9 @@ Source5:       %{name}-slave-env.sh
 
 #####################################
 # NOTE: Tracking against:
-# https://github.com/timothysc/mesos/tree/0.18.0-integ
+# https://github.com/timothysc/mesos/tree/0.18-integ
 ####################################
-Patch0:          mesos-0.18.0-integ.patch
+Patch0:          mesos-0.18-integ.patch
 
 BuildRequires:  libtool
 BuildRequires:  automake
@@ -124,6 +124,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 make libev.la
 cd ../
 ######################################
+export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 %configure --disable-static
@@ -143,7 +144,7 @@ make
   echo "Skipping tests, do to mock issues"
 %else
   export LD_LIBRARY_PATH=`pwd`/src/.libs
-  make check 
+  make check
 %endif
 
 %install
@@ -182,15 +183,13 @@ mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_siteli
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 ######################
-# NOTE: The java setup is custom b/c they *DO NOT* use maven
-# to build, thus everything needs to be custom. 
+# call out to xmvn.
 ######################
-mkdir -p %{buildroot}%{_javadir}
-mkdir -p %{buildroot}%{_mavenpomdir}
-cp src/%{name}-%{version}.jar %{buildroot}%{_javadir}/%{name}.jar
-cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
-
-%add_maven_depmap JPP-%{name}.pom %{name}.jar
+%mvn_artifact src/java/%{name}.pom src/java/target/%{name}-%{version}.jar
+#mkdir -p %{buildroot}%{_mavenpomdir}
+#cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
+#cd src/java
+%mvn_install
 
 ############################################
 %files
@@ -219,9 +218,11 @@ cp src/java/%{name}.pom %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
 ######################
 %files java
 %doc LICENSE NOTICE
-%{_javadir}/%{name}.jar
-%{_mavenpomdir}/JPP-%{name}.pom
-%{_mavendepmapfragdir}/%{name}
+%{_jnidir}/%{name}/%{name}.jar
+%{_mavenpomdir}/JPP.%{name}-%{name}.pom
+%{_mavendepmapfragdir}/%{name}.xml
+# we could include the java
+
 
 ######################
 %files -n python-%{name}
@@ -251,6 +252,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed May 14 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-1.453b973
+- Rebase to latest 0.18.2-rc1
+
 * Thu Apr 3 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-2.185dba5
 - Updated to 0.18.0-rc6
 - Fixed MESOS-1126 - dlopen libjvm.so
@@ -258,7 +262,7 @@ exit 0
 * Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b
 - Updated to 0.18.0-rc3
 - Included sub-packaging around language bindings (Java & Python)
-- Improved systemd integration 
+- Improved systemd integration
 - Itegration to rebuild libev-source w/-DEV_CHILD_ENABLE=0
 
 * Mon Jan 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.16.0-3.afe9947
@@ -271,10 +275,10 @@ exit 0
 - Update to latest upstream tip.
 
 * Thu Oct 31 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-4.42f8640
-- Merge in latest upstream developments 
+- Merge in latest upstream developments
 
 * Fri Oct 18 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-4.464661f
-- Package restructuring for subsuming library dependencies dependencies. 
+- Package restructuring for subsuming library dependencies dependencies.
 
 * Thu Oct 3 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-3.8037f97
 - Cleaning package for review
@@ -282,15 +286,15 @@ exit 0
 * Fri Sep 20 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.2.01ccdb
 - Cleanup for system integration
 
-* Tue Sep 17 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.1.1bc2941 
+* Tue Sep 17 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.1.1bc2941
 - Update to the latest mesos HEAD
 
 * Wed Aug 14 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.12.1-0.4.dff92ff
 - spec: cleanups and fixes
 - spec: fix systemd daemon
 
-* Mon Aug 12 2013 Timothy St. Clair <tstclair@redhat.com> - 0.12.1-0.3.dff92ff 
-- Update and add install targets. 
+* Mon Aug 12 2013 Timothy St. Clair <tstclair@redhat.com> - 0.12.1-0.3.dff92ff
+- Update and add install targets.
 
 * Fri Aug  9 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.12.1-0.2.cba04c1
 - Update to latest
