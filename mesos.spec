@@ -35,6 +35,7 @@ BuildRequires: http-parser-devel
 BuildRequires: boost-devel
 BuildRequires: glog-devel
 BuildRequires: gmock-devel
+BuildRequires: gflags-devel
 BuildRequires: gtest-devel
 BuildRequires: gperftools-devel
 BuildRequires: libev-source
