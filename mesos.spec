@@ -7,7 +7,7 @@
 
 Name:          mesos
 Version:       0.18.2
-Release:       2.%{shortcommit}%{?dist}
+Release:       3.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -264,8 +264,11 @@ exit 0
 /sbin/ldconfig
 
 %changelog
-* Tue May 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-2.453b973
+* Tue May 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-3.453b973
 - Fixes for systemd
+
+* Fri May 23 2014 Petr Machata <pmachata@redhat.com> - 0.18.2-2.453b973
+- Rebuild for boost 1.55.0
 
 * Wed May 14 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-1.453b973
 - Rebase to latest 0.18.2-rc1
