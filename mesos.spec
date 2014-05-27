@@ -7,7 +7,7 @@
 
 Name:          mesos
 Version:       0.18.2
-Release:       1.%{shortcommit}%{?dist}
+Release:       2.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -23,7 +23,8 @@ Source5:       %{name}-slave-env.sh
 # NOTE: Tracking against:
 # https://github.com/timothysc/mesos/tree/0.18-integ
 ####################################
-Patch0:          mesos-0.18-integ.patch
+Patch0:         mesos-0.18-integ.patch
+Patch1:         MESOS-1195.patch
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -110,6 +111,7 @@ The python-%{name} package contains Python bindings for %{name}.
 %prep
 %setup -q -n %{name}-%{commit}
 %patch0 -p1
+%patch1 -p1
 
 ######################################
 # We need to rebuild libev and bind statically
@@ -262,6 +264,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Tue May 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-2.453b973
+- Fixes for systemd
+
 * Wed May 14 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-1.453b973
 - Rebase to latest 0.18.2-rc1
 

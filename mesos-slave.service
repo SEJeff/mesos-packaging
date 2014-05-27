@@ -5,22 +5,28 @@ After=network.target
 Wants=network.target
 
 [Service]
-Type=forking 
+Type=forking
 ExecStart=/usr/sbin/mesos-daemon.sh mesos-slave
 ExecStop=/usr/bin/killall -s 9 mesos-slave
 ExecReload=/bin/kill -HUP $MAINPID
-User=mesos
+#######################################
+# NOTE: running as user mesos fails priv switching
+#######################################
+User=root
 Group=mesos
 Restart=always
 RestartSec=20
 LimitNOFILE=16384
 
 #######################################
-# Note: Below are cgroup options
+# NOTE: Below are cgroup options
 #######################################
-#Slice=mesos
-#CPUAccounting=true
-#CPUShares=1024
+Slice=mesos
+CPUAccounting=true
+#######################################
+# NOTE: Adjust as needed
+#######################################
+CPUShares=1024
 
 ##################
 MemoryAccounting=true

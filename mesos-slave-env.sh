@@ -12,4 +12,7 @@ export MESOS_master=$HOSTNAME:5050
 # Other options you're likely to want to set:
 export MESOS_log_dir=/var/log/mesos
 export MESOS_work_dir=/var/run/mesos
-#export MESOS_isolation=cgroups
+export MESOS_isolation='cgroups/cpu,cgroups/mem'
+export MESOS_cgroups_root='system.slice/mesos-slave.service'
+export MESOS_hierarchy=/sys/fs/cgroup
+
