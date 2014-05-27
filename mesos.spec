@@ -7,7 +7,7 @@
 
 Name:          mesos
 Version:       0.18.2
-Release:       3.%{shortcommit}%{?dist}
+Release:       4.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -25,6 +25,7 @@ Source5:       %{name}-slave-env.sh
 ####################################
 Patch0:         mesos-0.18-integ.patch
 Patch1:         MESOS-1195.patch
+Patch2:         mesos-non-x86-arches.patch
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -66,12 +67,6 @@ BuildRequires: python-boto
 Requires: protobuf-python
 Requires: python-boto
 
-######################################
-# NOTE: arm has no planned support upstream
-# and fails to compile, thus disabled
-######################################
-ExcludeArch: %{arm}
-
 %description
 Apache Mesos is a cluster manager that provides efficient resource
 isolation and sharing across distributed applications, or frameworks.
@@ -112,6 +107,7 @@ The python-%{name} package contains Python bindings for %{name}.
 %setup -q -n %{name}-%{commit}
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 ######################################
 # We need to rebuild libev and bind statically
@@ -264,6 +260,10 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Tue May 27 2014 Dennis Gilmore <dennis@ausil.us> - 0.18.2-4.453b973
+- add patch to enable building on all primary and secondary arches
+- remove ExcludeArch %%{arm}
+
 * Tue May 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-3.453b973
 - Fixes for systemd
 
