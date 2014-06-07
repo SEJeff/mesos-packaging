@@ -7,7 +7,7 @@
 
 Name:          mesos
 Version:       0.18.2
-Release:       4.%{shortcommit}%{?dist}
+Release:       5.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -260,6 +260,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.18.2-5.453b973
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
 * Tue May 27 2014 Dennis Gilmore <dennis@ausil.us> - 0.18.2-4.453b973
 - add patch to enable building on all primary and secondary arches
 - remove ExcludeArch %%{arm}
