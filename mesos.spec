@@ -7,7 +7,7 @@
 
 Name:          mesos
 Version:       0.18.2
-Release:       5.%{shortcommit}%{?dist}
+Release:       6.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -260,6 +260,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Sun Aug 17 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.18.2-6.453b973
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.18.2-5.453b973
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
