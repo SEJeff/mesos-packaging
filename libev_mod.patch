@@ -1,0 +1,11 @@
+diff --git a/src/libprocess/process.cpp b/src/libprocess/process.cpp
+index 2d193b1..e505e67 100644
+--- a/src/libprocess/process.cpp
++++ b/src/libprocess/process.cpp
+@@ -1,5 +1,5 @@
+ #include <errno.h>
+-#include <ev.h>
++#include <libev/ev.h>
+ #include <limits.h>
+ #include <libgen.h>
+ #include <netdb.h>

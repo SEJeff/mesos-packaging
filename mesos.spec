@@ -1,13 +1,13 @@
-%global commit      453b973bf93d55a3a8e5d7059e99c00ea460530e
+%global commit      f421ffdf8d32a8834b3a6ee483b5b59f65956497
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.18.2-rc1
+%global tag         0.20.0-rc2
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
 
 Name:          mesos
-Version:       0.18.2
-Release:       6.%{shortcommit}%{?dist}
+Version:       0.20.0
+Release:       1.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -19,13 +19,8 @@ Source3:       %{name}-slave.service
 Source4:       %{name}-master-env.sh
 Source5:       %{name}-slave-env.sh
 
-#####################################
-# NOTE: Tracking against:
-# https://github.com/timothysc/mesos/tree/0.18-integ
 ####################################
-Patch0:         mesos-0.18-integ.patch
-Patch1:         MESOS-1195.patch
-Patch2:         mesos-non-x86-arches.patch
+Patch0:        mesos-0.20-integ.patch
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -66,6 +61,7 @@ BuildRequires: python-boto
 
 Requires: protobuf-python
 Requires: python-boto
+Requires: docker-io
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
@@ -105,9 +101,10 @@ The python-%{name} package contains Python bindings for %{name}.
 
 %prep
 %setup -q -n %{name}-%{commit}
+# remove all bundled elements prior to build
+rm -f `find . | grep [.]tar`
+
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
 
 ######################################
 # We need to rebuild libev and bind statically
@@ -116,13 +113,6 @@ The python-%{name} package contains Python bindings for %{name}.
 cp -r %{_datadir}/libev-source libev-%{libevver}
 cd libev-%{libevver}
 autoreconf -i
-
-######################################
-# NOTE: remove all bundled elements
-# Still pushing upstream on removal
-# but it may take some time.
-######################################
-rm -rf 3rdparty
 
 %build
 ######################################
@@ -138,18 +128,16 @@ cd ../
 export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
-%configure --disable-static
+ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
 make
-######################################
-# NOTE: %{?_smp_mflags}
-# currently fails upstream
-######################################
+#%{?_smp_mflags}
 
 %check
 ######################################
-# NOTE: as of 0.16.0 &> there has been a change in the startup routines which cause
-# a substantial number of tests to fail/hang under mock.  However, they run fine under a local environment
-# so they are disabled by default at this time.
+# NOTE: as of 0.16.0 &> there has been a change in the startup routines which
+# cause a substantial number of tests to fail/hang under mock.  However, they
+# run fine under a local environment so they are disabled by default at this
+# time.
 ######################################
 %if %skiptests
   echo "Skipping tests, do to mock issues"
@@ -168,15 +156,34 @@ export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 export PYTHONPATH=%{buildroot}%{python_sitearch}
 mkdir -p %{buildroot}%{python_sitearch}
-python src/python/setup.py install --root=%{buildroot} --prefix=/usr
+pushd src/python
+python setup.py install --root=%{buildroot} --prefix=/usr
+popd
+
+mkdir -p %{buildroot}%{python_sitelib}
+mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
+rm -rf %{buildroot}%{_libexecdir}/%{name}/python
+
+pushd src/python/native
+python setup.py install --root=%{buildroot} --prefix=/usr --install-lib=%{python_sitearch}
+popd
+
+pushd src/python/interface
+python setup.py install --root=%{buildroot} --prefix=/usr
+popd
 ######################################
 
 # fedora guidelines no .a|.la
 rm -f %{buildroot}%{_libdir}/*.la
 
+# Move the inclusions under mesos folder for developers
+mv -f %{buildroot}%{_includedir}/stout %{buildroot}%{_includedir}/%{name}
+mv -f %{buildroot}%{_includedir}/process %{buildroot}%{_includedir}/%{name}
+
 # system integration sysconfig setting
-mv %{buildroot}%{_sysconfdir}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
-rm -rf mv %{buildroot}%{_sysconfdir}/%{name}/deploy
+mkdir -p %{buildroot}%{_sysconfdir}/%{name}
+mv %{buildroot}%{_var}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
+rm -rf mv %{buildroot}%{_var}/%{name}/deploy
 
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
@@ -189,9 +196,6 @@ mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 
-mkdir -p %{buildroot}%{python_sitelib}
-mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
-rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 ######################
 # install java bindings
@@ -202,7 +206,7 @@ rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 ############################################
 %files
 %doc LICENSE NOTICE
-%{_libdir}/libmesos-%{version}.so.*
+%{_libdir}/libmesos-%{version}.s*
 %{_bindir}/mesos*
 %{_sbindir}/mesos-*
 %{_datadir}/%{name}/
@@ -231,13 +235,11 @@ rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 %{_mavendepmapfragdir}/%{name}.xml
 # we could include the java
 
-
 ######################
 %files -n python-%{name}
 %doc LICENSE NOTICE
-%{python_sitearch}/mesos*.py*
-%{python_sitearch}/_mesos.so
-%{python_sitearch}/%{name}-%{version}-py%{py_version}.egg-info
+%{python_sitelib}/*
+%{python_sitearch}/*
 ############################################
 
 %pre
@@ -260,6 +262,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Aug 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-1.f421ffd
+- Rebase to new release 0.20
+
 * Sun Aug 17 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.18.2-6.453b973
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
 
