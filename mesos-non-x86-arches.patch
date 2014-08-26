@@ -1,0 +1,42 @@
+--- mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/configure.ac.orig	2014-05-27 13:52:56.430545911 -0500
++++ mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/configure.ac	2014-05-27 13:52:27.241545897 -0500
+@@ -353,7 +353,7 @@
+       #Review TODO - JAVA_JVM_LIBRARY=??
+     elif test "$OS_NAME" = "linux"; then
+       JAVA_LDFLAGS=""
+-      for arch in amd64 i386; do
++      for arch in amd64 i386 arm aarch64 ppc64 ppc64le s390 s390x; do
+         dir="$JAVA_HOME/jre/lib/$arch/server"
+         if test -e "$dir"; then
+           # Note that these are libtool specific flags.
+--- mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/include/mesos/process/future.hpp.orig	2014-05-27 14:59:16.494705205 -0500
++++ mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/include/mesos/process/future.hpp	2014-05-27 15:00:03.907057721 -0500
+@@ -646,7 +646,11 @@
+ inline void acquire(int* lock)
+ {
+   while (!__sync_bool_compare_and_swap(lock, 0, 1)) {
+-    asm volatile ("pause");
++    #if defined(__i386__) || defined(__x86_64__)
++      asm volatile ("pause");
++    #else
++      asm volatile ("nop");
++    #endif
+   }
+ }
+ 
+--- mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/src/libprocess/process.cpp.orig	2014-05-27 15:41:40.156099590 -0500
++++ mesos-453b973bf93d55a3a8e5d7059e99c00ea460530e/src/libprocess/process.cpp	2014-05-27 15:43:16.079209402 -0500
+@@ -2678,7 +2678,12 @@
+   synchronized (processes) {
+     // Wait for all process references to get cleaned up.
+     while (process->refs > 0) {
+-      asm ("pause");
++      #ifdef __i386__ || __x86_64__
++        asm ("pause");
++      #else
++        asm ("nop");
++      #endif
++
+       __sync_synchronize();
+     }
+ 

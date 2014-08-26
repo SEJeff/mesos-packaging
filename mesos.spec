@@ -1,13 +1,13 @@
-%global commit     afe994774266154c544f5efc37f31a74cbf8a200 
-
+%global commit      f421ffdf8d32a8834b3a6ee483b5b59f65956497
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global gentag      0.16.0-rc3
-
+%global tag         0.20.0-rc2
 %global skiptests   1
+%global libevver    4.15
+%global py_version  2.7
 
 Name:          mesos
-Version:       0.16.0
-Release:       3.%{shortcommit}%{?dist}
+Version:       0.20.0
+Release:       1.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -16,64 +16,52 @@ Source0:       https://github.com/apache/mesos/archive/%{commit}/%{name}-%{versi
 Source1:       %{name}-tmpfiles.conf
 Source2:       %{name}-master.service
 Source3:       %{name}-slave.service
+Source4:       %{name}-master-env.sh
+Source5:       %{name}-slave-env.sh
 
-#####################################
-# NOTE: This patch has been accepted upstream and can be removed next release
-#####################################
-Patch0:         https://issues.apache.org/jira/secure/attachment/12615152/MESOS-831.patch
-
-#####################################
-# NOTE: The modifications have been broken into three patches which are consistent 
-# with *many* other projects, and are tracking @
-#
-# https://github.com/timothysc/mesos
-# Full integration stream is: https://github.com/timothysc/mesos/tree/0.16.0-integ
-#
-# The shuffle patch is maintained because it is a
-# patch that is trying to be pushed upstream, thus breaking it out as a series
-# of steps doesn't make sense, but has been isolated into it's own patch per review.
 ####################################
-#git diff --no-ext-diff 0.16.0  0.16.0-pre-shuffle > build_mods.patch
-Patch1:          build_mods.patch
-# git diff --no-ext-diff 0.16.0-pre-shuffle 0.16.0-post-shuffle > fileshuffle_mods.patch
-# b/c order matters on a shuffle-patch. 
-Patch2:          fileshuffle_mods.patch
-# git diff --no-ext-diff 0.16.0 0.16.0-testing >testing_mods.patch
-Patch3:          testing_mods.patch
-Patch4:          libev_mod.patch
+Patch0:        mesos-0.20-integ.patch
 
-BuildRequires:  libtool
-BuildRequires:  automake
-BuildRequires:  autoconf
-BuildRequires:  zlib-devel
-BuildRequires:  libcurl-devel
-BuildRequires:  http-parser-devel
-BuildRequires:  boost-devel
-BuildRequires:  glog-devel
-BuildRequires:  gmock-devel
-BuildRequires:  gtest-devel
-BuildRequires:  gperftools-devel
-BuildRequires:  libev-devel
-BuildRequires:  leveldb-devel
-BuildRequires:  protobuf-devel
-BuildRequires:  python-boto
-BuildRequires:  python-setuptools
-BuildRequires:  protobuf-python
-BuildRequires:  protobuf-java
-BuildRequires:  python2-devel
-BuildRequires:  zookeeper-lib-devel
-BuildRequires:  openssl-devel
-BuildRequires:  cyrus-sasl-devel
-BuildRequires:  java-devel
-BuildRequires:  systemd
+BuildRequires: libtool
+BuildRequires: automake
+BuildRequires: autoconf
+BuildRequires: java-devel
+BuildRequires: zlib-devel
+BuildRequires: libcurl-devel
+BuildRequires: http-parser-devel
+BuildRequires: boost-devel
+BuildRequires: glog-devel
+BuildRequires: gmock-devel
+BuildRequires: gflags-devel
+BuildRequires: gtest-devel
+BuildRequires: gperftools-devel
+BuildRequires: libev-source
+BuildRequires: leveldb-devel
+BuildRequires: protobuf-devel
+BuildRequires: python-setuptools
+BuildRequires: protobuf-python
+BuildRequires: protobuf-java
+BuildRequires: python2-devel
+BuildRequires: zookeeper-lib-devel
+BuildRequires: openssl-devel
+BuildRequires: cyrus-sasl-devel
+BuildRequires: systemd
+
+BuildRequires: maven-local
+BuildRequires: maven-plugin-bundle
+BuildRequires: maven-gpg-plugin
+BuildRequires: maven-clean-plugin
+BuildRequires: maven-shade-plugin
+BuildRequires: maven-dependency-plugin
+BuildRequires: exec-maven-plugin
+BuildRequires: maven-remote-resources-plugin
+BuildRequires: maven-site-plugin
+BuildRequires: protobuf-python
+BuildRequires: python-boto
 
 Requires: protobuf-python
-
-######################################
-# NOTE: arm has no planned support upstream
-# and fails to compile, thus disabled
-######################################
-ExcludeArch: %{arm}
+Requires: python-boto
+Requires: docker-io
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
@@ -89,96 +77,169 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 Provides header and development files for %{name}.
+
+##############################################
+%package java
+Summary:        Java interface for %{name}
+Group:          Development/Libraries
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+
+%description java
+The %{name}-java package contains Java bindings for %{name}.
+
+##############################################
+%package -n python-%{name}
+Summary:        Python support for %{name}
+BuildRequires:  python2-devel
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       python2
+
+%description -n python-%{name}
+The python-%{name} package contains Python bindings for %{name}.
+
 ##############################################
 
 %prep
 %setup -q -n %{name}-%{commit}
+# remove all bundled elements prior to build
+rm -f `find . | grep [.]tar`
 
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
 
 ######################################
-# NOTE: remove all bundled elements
-# Still pushing upstream on removal
-# but it may take some time.
+# We need to rebuild libev and bind statically
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
 ######################################
-rm -rf 3rdparty
+cp -r %{_datadir}/libev-source libev-%{libevver}
+cd libev-%{libevver}
+autoreconf -i
 
 %build
+######################################
+# We need to rebuild libev and bind statically
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
+cd libev-%{libevver}
+export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+%configure --enable-shared=no --with-pic
+make libev.la
+cd ../
+######################################
+export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
-%configure --disable-static
+export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
+ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
 make
-######################################
-# NOTE: %{?_smp_mflags}
-# currently fails upstream
-######################################
-
-######################################
-# NOTE: https://issues.apache.org/jira/browse/MESOS-899
-# Python installation is still TBD:
-#
-# export PYTHONPATH=${PYTHONPATH}:{buildroot}{python_sitearch}
-# mkdir -p {buildroot}{python_sitearch}
-# python src/python/setup.py install --prefix={buildroot}{python_sitearch}
-######################################
+#%{?_smp_mflags}
 
 %check
 ######################################
-# NOTE: as of 0.16.0 &> there has been a change in the startup routines which cause
-# a substantial number of tests to fail/hang under mock.  However, they run fine under a local environment
-# so they are disabled by default at this time.
+# NOTE: as of 0.16.0 &> there has been a change in the startup routines which
+# cause a substantial number of tests to fail/hang under mock.  However, they
+# run fine under a local environment so they are disabled by default at this
+# time.
 ######################################
 %if %skiptests
   echo "Skipping tests, do to mock issues"
 %else
   export LD_LIBRARY_PATH=`pwd`/src/.libs
-  make check 
+  make check
 %endif
 
 %install
-%make_install 
+%make_install
 
-# fedora guidelines no .a|.la
-rm -f %{buildroot}%{_libdir}/*.la
-
-# system integration sysconfig setting
-mv %{buildroot}%{_sysconfdir}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
-rm -rf mv %{buildroot}%{_sysconfdir}/%{name}/deploy
-
-mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
-install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
-
-mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
-mkdir -p %{buildroot}%{_unitdir}
-install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
+######################################
+# NOTE: https://issues.apache.org/jira/browse/MESOS-899
+export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
+export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
+export PYTHONPATH=%{buildroot}%{python_sitearch}
+mkdir -p %{buildroot}%{python_sitearch}
+pushd src/python
+python setup.py install --root=%{buildroot} --prefix=/usr
+popd
 
 mkdir -p %{buildroot}%{python_sitelib}
 mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
+pushd src/python/native
+python setup.py install --root=%{buildroot} --prefix=/usr --install-lib=%{python_sitearch}
+popd
+
+pushd src/python/interface
+python setup.py install --root=%{buildroot} --prefix=/usr
+popd
+######################################
+
+# fedora guidelines no .a|.la
+rm -f %{buildroot}%{_libdir}/*.la
+
+# Move the inclusions under mesos folder for developers
+mv -f %{buildroot}%{_includedir}/stout %{buildroot}%{_includedir}/%{name}
+mv -f %{buildroot}%{_includedir}/process %{buildroot}%{_includedir}/%{name}
+
+# system integration sysconfig setting
+mkdir -p %{buildroot}%{_sysconfdir}/%{name}
+mv %{buildroot}%{_var}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
+rm -rf mv %{buildroot}%{_var}/%{name}/deploy
+
+mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
+install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
+
+install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/%{name}
+install -m 0644 %{SOURCE5} %{buildroot}%{_sysconfdir}/%{name}
+
+mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
+mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
+mkdir -p %{buildroot}%{_unitdir}
+install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
+
+
+######################
+# install java bindings
+######################
+%mvn_artifact src/java/%{name}.pom src/java/target/%{name}-%{version}.jar
+%mvn_install
+
 ############################################
 %files
-%doc LICENSE README.md
-%{_libdir}/libmesos-%{version}.so.*
+%doc LICENSE NOTICE
+%{_libdir}/libmesos-%{version}.s*
 %{_bindir}/mesos*
 %{_sbindir}/mesos-*
 %{_datadir}/%{name}/
 %{_libexecdir}/%{name}/
 #system integration aspects
-%{_sysconfdir}/%{name}/
+%{_sysconfdir}/%{name}/*.template
 %{python_sitelib}/%{name}/
-%{_var}/log/%{name}/
-%config(noreplace) %_sysconfdir/tmpfiles.d/%{name}.conf
+%attr(0755,mesos,mesos) %{_var}/log/%{name}/
+%attr(0755,mesos,mesos) %{_var}/lib/%{name}/
+%config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
+%config(noreplace) %{_sysconfdir}/%{name}/*env.sh
 %{_unitdir}/%{name}*.service
 
+######################
 %files devel
-%doc LICENSE README.md
+%doc LICENSE NOTICE
 %{_includedir}/mesos/
 %{_libdir}/libmesos.so
 %{_libdir}/pkgconfig/%{name}.pc
+
+######################
+%files java
+%doc LICENSE NOTICE
+%{_jnidir}/%{name}/%{name}.jar
+%{_mavenpomdir}/JPP.%{name}-%{name}.pom
+%{_mavendepmapfragdir}/%{name}.xml
+# we could include the java
+
+######################
+%files -n python-%{name}
+%doc LICENSE NOTICE
+%{python_sitelib}/*
+%{python_sitearch}/*
 ############################################
 
 %pre
@@ -201,6 +262,35 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Aug 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-1.f421ffd
+- Rebase to new release 0.20
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.18.2-5.453b973
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Tue May 27 2014 Dennis Gilmore <dennis@ausil.us> - 0.18.2-4.453b973
+- add patch to enable building on all primary and secondary arches
+- remove ExcludeArch %%{arm}
+
+* Tue May 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-3.453b973
+- Fixes for systemd
+
+* Fri May 23 2014 Petr Machata <pmachata@redhat.com> - 0.18.2-2.453b973
+- Rebuild for boost 1.55.0
+
+* Wed May 14 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.2-1.453b973
+- Rebase to latest 0.18.2-rc1
+
+* Thu Apr 3 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-2.185dba5
+- Updated to 0.18.0-rc6
+- Fixed MESOS-1126 - dlopen libjvm.so
+
+* Wed Mar 5 2014 Timothy St. Clair <tstclair@redhat.com> - 0.18.0-1.a411a4b
+- Updated to 0.18.0-rc3
+- Included sub-packaging around language bindings (Java & Python)
+- Improved systemd integration
+- Itegration to rebuild libev-source w/-DEV_CHILD_ENABLE=0
+
 * Mon Jan 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.16.0-3.afe9947
 - Updated to 0.16.0-rc3
 
@@ -211,10 +301,10 @@ exit 0
 - Update to latest upstream tip.
 
 * Thu Oct 31 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-4.42f8640
-- Merge in latest upstream developments 
+- Merge in latest upstream developments
 
 * Fri Oct 18 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-4.464661f
-- Package restructuring for subsuming library dependencies dependencies. 
+- Package restructuring for subsuming library dependencies dependencies.
 
 * Thu Oct 3 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-3.8037f97
 - Cleaning package for review
@@ -222,15 +312,15 @@ exit 0
 * Fri Sep 20 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.2.01ccdb
 - Cleanup for system integration
 
-* Tue Sep 17 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.1.1bc2941 
+* Tue Sep 17 2013 Timothy St. Clair <tstclair@redhat.com> - 0.15.0-0.1.1bc2941
 - Update to the latest mesos HEAD
 
 * Wed Aug 14 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.12.1-0.4.dff92ff
 - spec: cleanups and fixes
 - spec: fix systemd daemon
 
-* Mon Aug 12 2013 Timothy St. Clair <tstclair@redhat.com> - 0.12.1-0.3.dff92ff 
-- Update and add install targets. 
+* Mon Aug 12 2013 Timothy St. Clair <tstclair@redhat.com> - 0.12.1-0.3.dff92ff
+- Update and add install targets.
 
 * Fri Aug  9 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.12.1-0.2.cba04c1
 - Update to latest

@@ -5,17 +5,34 @@ After=network.target
 Wants=network.target
 
 [Service]
-EnvironmentFile=-/etc/sysconfig/mesos/mesos-master-env
-#Type=forking
-ExecStart=/usr/sbin/mesos-master --log_dir=/var/log/mesos --port=5050
+Type=forking
+ExecStart=/usr/sbin/mesos-daemon.sh mesos-master
 ExecStop=/usr/bin/killall -s 9 mesos-master
 ExecReload=/bin/kill -HUP $MAINPID
-User=mesos
+User=root
 Group=mesos
 Restart=always
 RestartSec=20
 LimitNOFILE=16384
-#ControlGroup=cpu:/mesos
+
+#######################################
+# Note: Below are cgroup options
+#######################################
+#Slice=mesos
+#CPUAccounting=true
+#CPUShares=1024
+
+##################
+#MemoryAccounting=true
+#TBD: MemoryLimit=bytes, MemorySoftLimit=bytes
+##################
+#BlockIOAccounting=true
+#BlockIOWeight=??
+#BlockIODeviceWeight=??
+#TBD: BlockIOReadBandwidth=bytes, BlockIOWriteBandwidth=bytes
+
+#DeviceAllow=
+#DevicePolicy=auto|closed|strict
 
 [Install]
 WantedBy=multi-user.target

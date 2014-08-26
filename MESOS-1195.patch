@@ -1,0 +1,57 @@
+diff --git a/src/linux/cgroups.cpp b/src/linux/cgroups.cpp
+index 142ac43..c6c2157 100644
+--- a/src/linux/cgroups.cpp
++++ b/src/linux/cgroups.cpp
+@@ -392,7 +392,8 @@ static Try<Nothing> write(
+     return Error("Failed to open file " + path);
+   }
+ 
+-  file << value << std::endl;
++  // NOTE: cgroups convention does not append a endln.
++  file << value;
+ 
+   if (file.fail()) {
+     ErrnoError error; // TODO(jieyu): Does std::ifstream actually set errno?
+@@ -449,9 +450,16 @@ Try<string> prepare(
+                    subsystem + "' subsystem attached");
+     }
+ 
+-    if (attached.get().size() > 1) {
+-      return Error("The " + subsystem + " subsystem is co-mounted at " +
+-                   hierarchy + " with other subsytems");
++    int attachedSize = attached.get().size();
++    if (attachedSize > 1) {
++      // Check systemd exception for co-mounting cpu and cpuacct.
++      int systemdCpuCheck = attached.get().count("cpu") +
++          attached.get().count("cpuacct");
++
++      if (systemdCpuCheck != attachedSize) {
++        return Error("The " + subsystem + " subsystem is co-mounted at " +
++                     hierarchy + " with other subsytems");
++      }
+     }
+   } else {
+     // Attempt to mount the hierarchy ourselves.
+diff --git a/src/slave/containerizer/isolators/cgroups/mem.cpp b/src/slave/containerizer/isolators/cgroups/mem.cpp
+index 6324dcd..1c1f33e 100644
+--- a/src/slave/containerizer/isolators/cgroups/mem.cpp
++++ b/src/slave/containerizer/isolators/cgroups/mem.cpp
+@@ -84,7 +84,8 @@ Try<Isolator*> CgroupsMemIsolatorProcess::create(const Flags& flags)
+   Try<bool> exists = cgroups::exists(
+       hierarchy.get(), flags.cgroups_root, "memory.oom_control");
+   if (exists.isError() || !exists.get()) {
+-    return Error("Failed to determine if 'memory.oom_control' control exists");
++    return Error("Failed to determine if 'memory.oom_control' control exists:" +
++                 exists.error());
+   }
+ 
+   // Make sure the kernel OOM-killer is enabled.
+@@ -94,7 +95,7 @@ Try<Isolator*> CgroupsMemIsolatorProcess::create(const Flags& flags)
+   Try<Nothing> write = cgroups::write(
+       hierarchy.get(), flags.cgroups_root, "memory.oom_control", "0");
+   if (write.isError()) {
+-    return Error("Failed to update memory.oom_control");
++    return Error("Failed to update memory.oom_control:" + write.error());
+   }
+ 
+   process::Owned<IsolatorProcess> process(
