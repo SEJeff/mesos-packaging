@@ -129,8 +129,7 @@ export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
-make
-#%{?_smp_mflags}
+make %{?_smp_mflags}
 
 %check
 ######################################
@@ -195,7 +194,6 @@ mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
-
 
 ######################
 # install java bindings
