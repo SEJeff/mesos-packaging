@@ -58,6 +58,7 @@ BuildRequires: maven-remote-resources-plugin
 BuildRequires: maven-site-plugin
 BuildRequires: protobuf-python
 BuildRequires: python-boto
+BuildRequires: picojson-devel
 
 Requires: protobuf-python
 Requires: python-boto
@@ -129,7 +130,7 @@ export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
-make 
+make
 #%{?_smp_mflags}
 
 %check
