@@ -62,7 +62,10 @@ BuildRequires: picojson-devel
 
 Requires: protobuf-python
 Requires: python-boto
+
+%ifarch x86_64
 Requires: docker-io
+%endif
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
