@@ -231,9 +231,8 @@ install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 %files java
 %doc LICENSE NOTICE
 %{_jnidir}/%{name}/%{name}.jar
-%{_mavenpomdir}/JPP.%{name}-%{name}.pom
-%{_mavendepmapfragdir}/%{name}.xml
-# we could include the java
+%{_datadir}/maven-metadata/%{name}.xml
+%{_datadir}/maven-poms/%{name}/%{name}.pom
 
 ######################
 %files -n python-%{name}
