@@ -2,9 +2,16 @@
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.20.0-rc2
 %global skiptests   1
-%global unbundled   1
 %global libevver    4.15
 %global py_version  2.7
+
+# build unbundled for fedora but enable
+# unbundled builds for others.
+%if 0%{?fedora} >= 20
+%global unbundled   1
+%else
+%global unbundled   0
+%endif
 
 Name:          mesos
 Version:       0.20.0
@@ -51,6 +58,7 @@ BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
 
 # Typically folks will install their own mvn
+# but if folks want to we can push outside.
 BuildRequires: maven-local
 BuildRequires: maven-plugin-bundle
 BuildRequires: maven-gpg-plugin
@@ -60,6 +68,7 @@ BuildRequires: maven-dependency-plugin
 BuildRequires: exec-maven-plugin
 BuildRequires: maven-remote-resources-plugin
 BuildRequires: maven-site-plugin
+BuildRequires: picojson-devel
 
 Requires: protobuf-python
 %endif
@@ -67,7 +76,10 @@ Requires: protobuf-python
 # Explicit call out of installation requirements not found via
 # package dependency tracking.
 Requires: python-boto
+
+%ifarch x86_64
 Requires: docker-io
+%endif
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
@@ -127,7 +139,6 @@ autoreconf -i
 # We need to rebuild libev and bind statically
 # See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
 %if %unbundled
-
 cd libev-%{libevver}
 export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
@@ -139,7 +150,6 @@ export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
-
 %else
 autoreconf -vfi
 %configure
