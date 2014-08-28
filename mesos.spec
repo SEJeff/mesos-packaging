@@ -111,10 +111,11 @@ The python-%{name} package contains Python bindings for %{name}.
 
 %prep
 %setup -q -n %{name}-%{commit}
+%patch0 -p1
+
+%if %unbundled
 # remove all bundled elements prior to build
 rm -f `find . | grep [.]tar`
-
-%patch0 -p1
 
 ######################################
 # We need to rebuild libev and bind statically
@@ -123,6 +124,7 @@ rm -f `find . | grep [.]tar`
 cp -r %{_datadir}/libev-source libev-%{libevver}
 cd libev-%{libevver}
 autoreconf -i
+%endif
 
 %build
 ######################################
@@ -145,6 +147,7 @@ ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api
 make %{?_smp_mflags}
 
 %else
+autoreconf -vfi
 %configure
 %endif
 
