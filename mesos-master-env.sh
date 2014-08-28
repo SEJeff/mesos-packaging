@@ -5,4 +5,5 @@
 
 # Some options you're likely to want to set:
 export MESOS_log_dir=/var/log/mesos
+export MESOS_work_dir=/var/run/mesos
 export MESOS_port=5050

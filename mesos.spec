@@ -2,12 +2,13 @@
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.20.0-rc2
 %global skiptests   1
+%global unbundled   1
 %global libevver    4.15
 %global py_version  2.7
 
 Name:          mesos
 Version:       0.20.0
-Release:       1.%{shortcommit}%{?dist}
+Release:       2.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -28,6 +29,13 @@ BuildRequires: autoconf
 BuildRequires: java-devel
 BuildRequires: zlib-devel
 BuildRequires: libcurl-devel
+BuildRequires: python-setuptools
+BuildRequires: python2-devel
+BuildRequires: openssl-devel
+BuildRequires: cyrus-sasl-devel
+BuildRequires: systemd
+
+%if %unbundled
 BuildRequires: http-parser-devel
 BuildRequires: boost-devel
 BuildRequires: glog-devel
@@ -37,16 +45,12 @@ BuildRequires: gtest-devel
 BuildRequires: gperftools-devel
 BuildRequires: libev-source
 BuildRequires: leveldb-devel
-BuildRequires: protobuf-devel
-BuildRequires: python-setuptools
 BuildRequires: protobuf-python
 BuildRequires: protobuf-java
-BuildRequires: python2-devel
 BuildRequires: zookeeper-lib-devel
-BuildRequires: openssl-devel
-BuildRequires: cyrus-sasl-devel
-BuildRequires: systemd
+BuildRequires: protobuf-devel
 
+# Typically folks will install their own mvn
 BuildRequires: maven-local
 BuildRequires: maven-plugin-bundle
 BuildRequires: maven-gpg-plugin
@@ -56,10 +60,12 @@ BuildRequires: maven-dependency-plugin
 BuildRequires: exec-maven-plugin
 BuildRequires: maven-remote-resources-plugin
 BuildRequires: maven-site-plugin
-BuildRequires: protobuf-python
-BuildRequires: python-boto
 
 Requires: protobuf-python
+%endif
+
+# Explicit call out of installation requirements not found via
+# package dependency tracking.
 Requires: python-boto
 Requires: docker-io
 
@@ -118,6 +124,8 @@ autoreconf -i
 ######################################
 # We need to rebuild libev and bind statically
 # See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
+%if %unbundled
+
 cd libev-%{libevver}
 export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
@@ -129,6 +137,11 @@ export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
+
+%else
+%configure
+%endif
+
 make %{?_smp_mflags}
 
 %check
@@ -150,9 +163,12 @@ make %{?_smp_mflags}
 
 ######################################
 # NOTE: https://issues.apache.org/jira/browse/MESOS-899
+%if %unbundled
 export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
+%endif
+
 export PYTHONPATH=%{buildroot}%{python_sitearch}
 mkdir -p %{buildroot}%{python_sitearch}
 pushd src/python
@@ -260,6 +276,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Aug 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-2.f421ffd
+- Fixes for system integration
+
 * Wed Aug 20 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-1.f421ffd
 - Rebase to new release 0.20
 
