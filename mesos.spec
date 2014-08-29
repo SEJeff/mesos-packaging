@@ -13,6 +13,8 @@
 %global unbundled   0
 %endif
 
+%global systemmvn   1
+
 Name:          mesos
 Version:       0.20.0
 Release:       2.%{shortcommit}%{?dist}
@@ -42,6 +44,18 @@ BuildRequires: openssl-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: systemd
 
+%if %systemmvn
+BuildRequires: maven-local
+BuildRequires: maven-plugin-bundle
+BuildRequires: maven-gpg-plugin
+BuildRequires: maven-clean-plugin
+BuildRequires: maven-shade-plugin
+BuildRequires: maven-dependency-plugin
+BuildRequires: exec-maven-plugin
+BuildRequires: maven-remote-resources-plugin
+BuildRequires: maven-site-plugin
+%endif
+
 %if %unbundled
 BuildRequires: http-parser-devel
 BuildRequires: boost-devel
@@ -56,18 +70,6 @@ BuildRequires: protobuf-python
 BuildRequires: protobuf-java
 BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
-
-# Typically folks will install their own mvn
-# but if folks want to we can push outside.
-BuildRequires: maven-local
-BuildRequires: maven-plugin-bundle
-BuildRequires: maven-gpg-plugin
-BuildRequires: maven-clean-plugin
-BuildRequires: maven-shade-plugin
-BuildRequires: maven-dependency-plugin
-BuildRequires: exec-maven-plugin
-BuildRequires: maven-remote-resources-plugin
-BuildRequires: maven-site-plugin
 BuildRequires: picojson-devel
 
 Requires: protobuf-python
@@ -261,8 +263,13 @@ install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 %files java
 %doc LICENSE NOTICE
 %{_jnidir}/%{name}/%{name}.jar
+%if 0%{?fedora} >= 21
 %{_datadir}/maven-metadata/%{name}.xml
 %{_datadir}/maven-poms/%{name}/%{name}.pom
+%else
+%{_mavenpomdir}/JPP.%{name}-%{name}.pom
+%{_mavendepmapfragdir}/%{name}.xml
+%endif
 
 ######################
 %files -n python-%{name}

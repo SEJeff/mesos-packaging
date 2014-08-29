@@ -150,14 +150,32 @@ index 4c8547a..7723e73 100644
  MESOS_JAR=${MESOS_BUILD_DIR}/src/java/target/mesos-@PACKAGE_VERSION@.jar
  
 diff --git a/src/python/native/ext_modules.py.in b/src/python/native/ext_modules.py.in
-index 4825fe4..b9fb7b9 100644
+index 4825fe4..2c28c47 100644
 --- a/src/python/native/ext_modules.py.in
 +++ b/src/python/native/ext_modules.py.in
-@@ -102,6 +102,8 @@ if os.path.exists(libprotobuf):
+@@ -41,6 +41,7 @@ glog = os.path.join(libprocess, '3rdparty', 'glog-0.3.3')
+ libev = os.path.join(libprocess, '3rdparty', 'libev-4.15')
+ gperftools = os.path.join(libprocess, '3rdparty', 'gperftools-2.0')
+ protobuf = os.path.join(libprocess, '3rdparty', 'protobuf-2.5.0')
++httparser = os.path.join(libprocess, '3rdparty')
+ 
+ # Build the list of source files. Note that each source must be
+ # relative to our current directory (where this script lives).
+@@ -76,6 +77,8 @@ libzookeeper = os.path.join(
+     abs_top_builddir, zookeeper, '.libs', 'libzookeeper_mt.a')
+ libprotobuf = os.path.join(
+     abs_top_builddir, protobuf, 'src', '.libs', 'libprotobuf.a')
++libhttp = os.path.join(
++    abs_top_builddir, httparser, '.libs', 'libry_http_parser.a')
+ 
+ if os.path.exists(libleveldb):
+     EXTRA_OBJECTS.append(libleveldb)
+@@ -102,6 +105,9 @@ if os.path.exists(libprotobuf):
  else:
    EXTRA_OBJECTS.append('-lprotobuf')
  
-+EXTRA_OBJECTS.append('-lhttp_parser')
++if not(os.path.exists(libhttp)):
++  EXTRA_OBJECTS.append('-lhttp_parser')
 +
  # For gperftools, we need to check for the presence of libprofiler.a, since
  # it is possible to disable perftools inside libprocess.
