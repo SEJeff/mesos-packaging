@@ -2,9 +2,16 @@
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.20.0-rc2
 %global skiptests   1
-%global unbundled   1
 %global libevver    4.15
 %global py_version  2.7
+
+# build unbundled for fedora but enable
+# unbundled builds for others.
+%if 0%{?fedora} >= 20
+%global unbundled   1
+%else
+%global unbundled   0
+%endif
 
 Name:          mesos
 Version:       0.20.0
@@ -51,6 +58,7 @@ BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
 
 # Typically folks will install their own mvn
+# but if folks want to we can push outside.
 BuildRequires: maven-local
 BuildRequires: maven-plugin-bundle
 BuildRequires: maven-gpg-plugin
@@ -131,7 +139,6 @@ autoreconf -i
 # We need to rebuild libev and bind statically
 # See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
 %if %unbundled
-
 cd libev-%{libevver}
 export CFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
 export CXXFLAGS="$RPM_OPT_FLAGS -DEV_CHILD_ENABLE=0 -I$PWD"
@@ -143,7 +150,6 @@ export M2_HOME=/usr/share/xmvn
 autoreconf -vfi
 export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
-
 %else
 autoreconf -vfi
 %configure
@@ -190,6 +196,8 @@ pushd src/python/native
 python setup.py install --root=%{buildroot} --prefix=/usr --install-lib=%{python_sitearch}
 popd
 
+rm -rf %{buildroot}%{python_sitearch}/*.pth
+
 pushd src/python/interface
 python setup.py install --root=%{buildroot} --prefix=/usr
 popd
@@ -205,7 +213,7 @@ mv -f %{buildroot}%{_includedir}/process %{buildroot}%{_includedir}/%{name}
 # system integration sysconfig setting
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}
 mv %{buildroot}%{_var}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
-rm -rf mv %{buildroot}%{_var}/%{name}/deploy
+rm -rf %{buildroot}%{_var}/%{name}/deploy
 
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
@@ -217,6 +225,7 @@ mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
+
 
 ######################
 # install java bindings
