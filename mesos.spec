@@ -196,6 +196,8 @@ pushd src/python/native
 python setup.py install --root=%{buildroot} --prefix=/usr --install-lib=%{python_sitearch}
 popd
 
+rm -rf %{buildroot}%{python_sitearch}/*.pth
+
 pushd src/python/interface
 python setup.py install --root=%{buildroot} --prefix=/usr
 popd
@@ -211,7 +213,7 @@ mv -f %{buildroot}%{_includedir}/process %{buildroot}%{_includedir}/%{name}
 # system integration sysconfig setting
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}
 mv %{buildroot}%{_var}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
-rm -rf mv %{buildroot}%{_var}/%{name}/deploy
+rm -rf %{buildroot}%{_var}/%{name}/deploy
 
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
@@ -223,6 +225,7 @@ mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
+
 
 ######################
 # install java bindings
