@@ -154,7 +154,7 @@ export LDFLAGS="$RPM_LD_FLAGS -L$PWD/libev-%{libevver}/.libs"
 ZOOKEEPER_JAR="/usr/share/java/zookeeper/zookeeper.jar:/usr/share/java/slf4j/api.jar:/usr/share/java/slf4j/log4j12.jar:/usr/share/java/log4j.jar" %configure --disable-bundled --disable-static
 %else
 autoreconf -vfi
-%configure
+%configure --disable-static
 %endif
 
 make %{?_smp_mflags}
