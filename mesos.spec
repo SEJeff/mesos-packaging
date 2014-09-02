@@ -80,7 +80,11 @@ Requires: protobuf-python
 Requires: python-boto
 
 %ifarch x86_64
+%if 0%{?fedora} >= 20
 Requires: docker-io
+%else
+Requires: docker
+%endif
 %endif
 
 %description
