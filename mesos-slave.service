@@ -7,7 +7,7 @@ Wants=network.target
 [Service]
 Type=forking
 ExecStart=/usr/sbin/mesos-daemon.sh mesos-slave
-ExecStop=/usr/bin/killall -s 9 mesos-slave
+ExecStop=/usr/bin/killall -s 15 mesos-slave
 ExecReload=/bin/kill -HUP $MAINPID
 #######################################
 # NOTE: running as user mesos fails priv switching

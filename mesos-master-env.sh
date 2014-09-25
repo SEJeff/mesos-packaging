@@ -7,3 +7,6 @@
 export MESOS_log_dir=/var/log/mesos
 export MESOS_work_dir=/var/run/mesos
 export MESOS_port=5050
+
+# For isolated sandbox testing
+#export MESOS_ip=127.0.0.1

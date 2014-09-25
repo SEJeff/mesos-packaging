@@ -9,12 +9,16 @@
 # non-ZooKeeper based masters, otherwise a zk:// or file:// URL.
 export MESOS_master=$HOSTNAME:5050
 
-# Other options you're likely to want to set:
+# For isolated sandbox testing
+#export MESOS_master=127.0.0.1:5050
+
+# For a complete listing of options execute 'mesos-slave --help'
 export MESOS_log_dir=/var/log/mesos
 export MESOS_work_dir=/var/run/mesos
 export MESOS_containerizers=docker,mesos
-# https://issues.apache.org/jira/browse/MESOS-1195
-# export MESOS_isolation='cgroups/cpu,cgroups/mem'
-# export MESOS_cgroups_root='system.slice/mesos-slave.service'
-# export MESOS_hierarchy=/sys/fs/cgroup
+
+# systemd cgroup integration
+export MESOS_isolation='cgroups/cpu,cgroups/mem'
+export MESOS_cgroups_root='system.slice/mesos-slave.service'
+export MESOS_cgroups_hierarchy=/sys/fs/cgroup
 

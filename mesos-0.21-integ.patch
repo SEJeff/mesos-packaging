@@ -1,14 +1,3 @@
-diff --git a/.gitignore b/.gitignore
-new file mode 100644
-index 0000000..4279e39
---- /dev/null
-+++ b/.gitignore
-@@ -0,0 +1,5 @@
-+Makefile
-+Makefile.in
-+*.o
-+*.lo
-+*.la
 diff --git a/3rdparty/Makefile.am b/3rdparty/Makefile.am
 index 7cf0c88..6df5526 100644
 --- a/3rdparty/Makefile.am
@@ -24,24 +13,24 @@ index 7cf0c88..6df5526 100644
  endif
  
  all-local: $(ALL_LOCAL)
-diff --git a/Makefile.am b/Makefile.am
-index e4ffa35..dcbe484 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -24,6 +24,8 @@ EXTRA_DIST =
- 
- PHONY_TARGETS =
- 
-+pkgconfigdir = $(libdir)/pkgconfig
-+pkgconfig_DATA = mesos.pc
- 
- # Since we generate several files in src/ with config.status, make
- # sure they're regenerated before we recurse into the src directory.
 diff --git a/configure.ac b/configure.ac
-index 87bfb7e..afb6051 100644
+index 86d448c..75e494c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -206,6 +206,8 @@ AC_ARG_VAR([MAVEN_HOME], [looks for mvn at MAVEN_HOME/bin/mvn])
+@@ -19,6 +19,12 @@
+ 
+ AC_PREREQ([2.61])
+ AC_INIT([mesos], [0.21.0])
++MAJOR_VER=0
++MINOR_VER=21
++PATCH_VER=0
++AC_SUBST(MAJOR_VER)
++AC_SUBST(MINOR_VER)
++AC_SUBST(PATCH_VER)
+ 
+ # Have autoconf setup some variables related to the system.
+ AC_CANONICAL_HOST
+@@ -216,6 +222,8 @@ AC_ARG_VAR([MAVEN_HOME], [looks for mvn at MAVEN_HOME/bin/mvn])
  
  AC_ARG_VAR([PROTOBUF_JAR], [full path to protobuf jar on prefixed builds])
  
@@ -50,7 +39,18 @@ index 87bfb7e..afb6051 100644
  AC_ARG_VAR([PYTHON], [which Python interpreter to use])
  
  AC_MSG_NOTICE([Setting up build environment for ${target_cpu} ${target_os}])
-@@ -274,8 +276,18 @@ fi
+@@ -243,6 +251,10 @@ AC_PROG_CXX([g++])
+ AC_PROG_CC([gcc])
+ 
+ 
++if test "x$enable_bundled" = "xyes"; then
++  CXXFLAGS="$CXXFLAGS -DBUNDLED"
++fi
++
+ # Check if we should try and enable optimizations.
+ if test "x$enable_optimize" = "xyes"; then
+   # For now, we only turn on optimizations for gcc.
+@@ -284,8 +296,18 @@ fi
  if test -n "`echo $with_zookeeper`"; then
    CPPFLAGS="$CPPFLAGS -I${with_zookeeper}/include/zookeeper"
    LDFLAGS="$LDFLAGS -L${with_zookeeper}/lib"
@@ -69,7 +69,7 @@ index 87bfb7e..afb6051 100644
  fi
  
  
-@@ -390,6 +402,7 @@ fi
+@@ -400,6 +422,7 @@ fi
  AM_CONDITIONAL([WITH_BUNDLED_ZOOKEEPER],
                 [test "x$with_bundled_zookeeper" = "xyes"])
  
@@ -78,7 +78,7 @@ index 87bfb7e..afb6051 100644
  # Check if user has asked us to use a preinstalled protobuf, or if
  # they asked us to ignore all bundled libraries while compiling and
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 40b9f6b..047fc04 100644
+index b821a3b..17fac25 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -27,8 +27,6 @@ include ../3rdparty/libprocess/3rdparty/versions.am
@@ -99,9 +99,18 @@ index 40b9f6b..047fc04 100644
 +endif
 +
  
- # Unfortunatley, 'pkglibexecdir' and 'pkglocalstatedir' are not set
+ # Unfortunatley, 'pkglibexecdir' and 'pkgsysconfdir' are not set
  # before automake 1.11, so we need to set them manually (until we in
-@@ -897,7 +899,7 @@ $(EXAMPLES_JAR): $(EXAMPLES_SOURCE)
+@@ -564,7 +566,7 @@ lib_LTLIBRARIES += libmesos.la
+ # Include as part of the distribution.
+ libmesos_la_SOURCES = $(MESOS_PROTO) $(CONTAINERIZER_PROTO) $(SCHEDULER_PROTO)
+ 
+-libmesos_la_LDFLAGS = -release $(PACKAGE_VERSION)
++libmesos_la_LDFLAGS = -version-info $(MINOR_VER):$(MAJOR_VER):0
+ 
+ # Since we just include the convenience library (and no sources), we
+ # need to tell libtool to build this as a C++ library.
+@@ -909,7 +911,7 @@ $(EXAMPLES_JAR): $(EXAMPLES_SOURCE)
  	@echo "Building examples.jar ..."
  	$(MKDIR_P) examples/java
  	$(JAVA_HOME)/bin/javac -source 1.6 -target 1.6			\
@@ -110,7 +119,7 @@ index 40b9f6b..047fc04 100644
            -sourcepath $(srcdir)/examples/java -d examples/java	        \
            $(srcdir)/examples/java/*.java
  	$(JAVA_HOME)/bin/jar cf $@ -C examples/java .
-@@ -1148,6 +1150,7 @@ if HAS_JAVA
+@@ -1160,6 +1162,7 @@ if HAS_JAVA
  
    mesos_tests_CPPFLAGS += $(JAVA_CPPFLAGS)
    mesos_tests_CPPFLAGS += -DZOOKEEPER_VERSION=\"$(ZOOKEEPER_VERSION)\"
@@ -118,19 +127,6 @@ index 40b9f6b..047fc04 100644
    mesos_tests_LDFLAGS = $(AM_LDFLAGS)
    mesos_tests_DEPENDENCIES += $(EXAMPLES_JAR)
  
-diff --git a/src/deploy/mesos-daemon.sh.in b/src/deploy/mesos-daemon.sh.in
-index b9866ac..e929738 100644
---- a/src/deploy/mesos-daemon.sh.in
-+++ b/src/deploy/mesos-daemon.sh.in
-@@ -3,7 +3,7 @@
- prefix=@prefix@
- exec_prefix=@exec_prefix@
- 
--deploy_dir=@localstatedir@/@PACKAGE@/deploy
-+deploy_dir=@sysconfdir@/@PACKAGE@
- 
- # Increase the default number of open file descriptors.
- ulimit -n 8192
 diff --git a/src/examples/java/test-log.in b/src/examples/java/test-log.in
 index 4c8547a..7723e73 100644
 --- a/src/examples/java/test-log.in
@@ -149,90 +145,28 @@ index 4c8547a..7723e73 100644
  
  MESOS_JAR=${MESOS_BUILD_DIR}/src/java/target/mesos-@PACKAGE_VERSION@.jar
  
-diff --git a/src/python/native/ext_modules.py.in b/src/python/native/ext_modules.py.in
-index 4825fe4..2c28c47 100644
---- a/src/python/native/ext_modules.py.in
-+++ b/src/python/native/ext_modules.py.in
-@@ -41,6 +41,7 @@ glog = os.path.join(libprocess, '3rdparty', 'glog-0.3.3')
- libev = os.path.join(libprocess, '3rdparty', 'libev-4.15')
- gperftools = os.path.join(libprocess, '3rdparty', 'gperftools-2.0')
- protobuf = os.path.join(libprocess, '3rdparty', 'protobuf-2.5.0')
-+httparser = os.path.join(libprocess, '3rdparty')
- 
- # Build the list of source files. Note that each source must be
- # relative to our current directory (where this script lives).
-@@ -76,6 +77,8 @@ libzookeeper = os.path.join(
-     abs_top_builddir, zookeeper, '.libs', 'libzookeeper_mt.a')
- libprotobuf = os.path.join(
-     abs_top_builddir, protobuf, 'src', '.libs', 'libprotobuf.a')
-+libhttp = os.path.join(
-+    abs_top_builddir, httparser, '.libs', 'libry_http_parser.a')
- 
- if os.path.exists(libleveldb):
-     EXTRA_OBJECTS.append(libleveldb)
-@@ -102,6 +105,9 @@ if os.path.exists(libprotobuf):
- else:
-   EXTRA_OBJECTS.append('-lprotobuf')
- 
-+if not(os.path.exists(libhttp)):
-+  EXTRA_OBJECTS.append('-lhttp_parser')
-+
- # For gperftools, we need to check for the presence of libprofiler.a, since
- # it is possible to disable perftools inside libprocess.
- libprofiler = os.path.join(
-diff --git a/src/tests/examples_tests.cpp b/src/tests/examples_tests.cpp
-index 5222b6d..b6f405f 100644
---- a/src/tests/examples_tests.cpp
-+++ b/src/tests/examples_tests.cpp
-@@ -33,7 +33,7 @@ TEST_SCRIPT(ExamplesTest, LowLevelSchedulerPthread,
-             "low_level_scheduler_pthread_test.sh")
- 
- #ifdef MESOS_HAS_JAVA
--TEST_SCRIPT(ExamplesTest, JavaFramework, "java_framework_test.sh")
-+TEST_SCRIPT(ExamplesTest, DISABLED_JavaFramework, "java_framework_test.sh")
- TEST_SCRIPT(ExamplesTest, JavaException, "java_exception_test.sh")
- TEST_SCRIPT(ExamplesTest, JavaLog, "java_log_test.sh")
- #endif
-diff --git a/src/tests/java_log_test.sh b/src/tests/java_log_test.sh
-index 5451725..d6beb4d 100755
---- a/src/tests/java_log_test.sh
-+++ b/src/tests/java_log_test.sh
-@@ -31,4 +31,5 @@ echo "102400" >> ${LOAD_FILE}
- export MESOS_LOG_TOOL=${MESOS_BUILD_DIR}/src/mesos-log
- 
- # Check that the Java log executes without crashing (returns 0).
-+echo "$MESOS_BUILD_DIR/src/examples/java/test-log ${ZK_URL} ${QUORUM} ${LOG_DIR} ${LOAD_FILE}" > /tmp/WTFF.txt
- exec $MESOS_BUILD_DIR/src/examples/java/test-log ${ZK_URL} ${QUORUM} ${LOG_DIR} ${LOAD_FILE}
-diff --git a/src/tests/log_tests.cpp b/src/tests/log_tests.cpp
-index 0088706..708635b 100644
---- a/src/tests/log_tests.cpp
-+++ b/src/tests/log_tests.cpp
-@@ -436,7 +436,7 @@ TEST_F(ReplicaTest, Append)
- }
- 
- 
--TEST_F(ReplicaTest, Restore)
-+TEST_F(ReplicaTest, DISABLED_Restore)
- {
-   const string path = os::getcwd() + "/.log";
-   initializer.flags.path = path;
 diff --git a/src/tests/zookeeper.cpp b/src/tests/zookeeper.cpp
-index 29656eb..89122a1 100644
+index 08cab86..1e6e315 100644
 --- a/src/tests/zookeeper.cpp
 +++ b/src/tests/zookeeper.cpp
-@@ -60,14 +60,11 @@ void ZooKeeperTest::SetUpTestCase()
+@@ -56,16 +56,17 @@ const Duration ZooKeeperTest::NO_TIMEOUT = Seconds(10);
+ void ZooKeeperTest::SetUpTestCase()
+ {
+   if (!Jvm::created()) {
++    string classpath = "-Djava.class.path=" ZOOKEEPER_JAR;
++
++#ifdef BUNDLED
      string zkHome =
        path::join(flags.build_dir, "/3rdparty/zookeeper-" ZOOKEEPER_VERSION);
  
 -    string classpath = "-Djava.class.path=" +
 -      path::join(zkHome, "zookeeper-" ZOOKEEPER_VERSION ".jar");
-+    string classpath = "-Djava.class.path=" ZOOKEEPER_JAR;
- 
+-
      // Now add all the libraries in 'lib' too.
      Try<list<string> > jars = os::glob(path::join(zkHome, "lib", "*.jar"));
  
--    CHECK_SOME(jars);
--
+     CHECK_SOME(jars);
++#endif
+ 
      foreach (const string& jar, jars.get()) {
        classpath += ":" + jar;
-     }

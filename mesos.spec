@@ -1,12 +1,12 @@
-%global commit      f421ffdf8d32a8834b3a6ee483b5b59f65956497
+%global commit      31337348cef29719890bffb59fbf8df8b18b39d0
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.20.0-rc2
+%global tag         0.21.0
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
 
 # build unbundled for fedora but enable
-# unbundled builds for others.
+# bundled builds for others.
 %if 0%{?fedora} >= 20
 %global unbundled   1
 %else
@@ -16,8 +16,8 @@
 %global systemmvn   1
 
 Name:          mesos
-Version:       0.20.0
-Release:       2.%{shortcommit}%{?dist}
+Version:       0.21.0
+Release:       1.SNAPSHOT.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -30,7 +30,7 @@ Source4:       %{name}-master-env.sh
 Source5:       %{name}-slave-env.sh
 
 ####################################
-Patch0:        mesos-0.20-integ.patch
+Patch0:        mesos-0.21-integ.patch
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -73,11 +73,8 @@ BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
 
 Requires: protobuf-python
-%endif
-
-# Explicit call out of installation requirements not found via
-# package dependency tracking.
 Requires: python-boto
+%endif
 
 %ifarch x86_64
 %if 0%{?fedora} >= 20
@@ -218,8 +215,6 @@ mv -f %{buildroot}%{_includedir}/process %{buildroot}%{_includedir}/%{name}
 
 # system integration sysconfig setting
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}
-mv %{buildroot}%{_var}/%{name}/deploy/* %{buildroot}%{_sysconfdir}/%{name}
-rm -rf %{buildroot}%{_var}/%{name}/deploy
 
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
@@ -242,7 +237,7 @@ install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 ############################################
 %files
 %doc LICENSE NOTICE
-%{_libdir}/libmesos-%{version}.s*
+%{_libdir}/libmesos.so.*
 %{_bindir}/mesos*
 %{_sbindir}/mesos-*
 %{_datadir}/%{name}/
@@ -302,6 +297,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Tue Sep 23 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-1.SNAPSHOT.3133734
+- Initial prototyping  
+ 
 * Wed Aug 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-2.f421ffd
 - Fixes for system integration
 
