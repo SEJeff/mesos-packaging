@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       1.SNAPSHOT.%{shortcommit}%{?dist}
+Release:       2.SNAPSHOT.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -26,8 +26,8 @@ Source0:       https://github.com/apache/mesos/archive/%{commit}/%{name}-%{versi
 Source1:       %{name}-tmpfiles.conf
 Source2:       %{name}-master.service
 Source3:       %{name}-slave.service
-Source4:       %{name}-master-env.sh
-Source5:       %{name}-slave-env.sh
+Source4:       %{name}-master
+Source5:       %{name}-slave
 
 ####################################
 Patch0:        mesos-0.21-integ.patch
@@ -160,7 +160,8 @@ autoreconf -vfi
 %configure --disable-static
 %endif
 
-make %{?_smp_mflags}
+make
+#%{?_smp_mflags}
 
 %check
 ######################################
@@ -221,14 +222,19 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
 
-install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/%{name}
-install -m 0644 %{SOURCE5} %{buildroot}%{_sysconfdir}/%{name}
+mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
+install -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/sysconfig
+install -m 0644 %{SOURCE5} %{buildroot}%{_sysconfdir}/sysconfig
+
+# NOTE: The following removes the deployment scripts and tooling.
+# It's still debatable if we should use it.
+rm -rf %{buildroot}%{_sysconfdir}/%{name}
+rm -f  %{buildroot}%{_sbindir}/mesos-*.sh
 
 mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
-
 
 ######################
 # install java bindings
@@ -244,13 +250,12 @@ install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 %{_sbindir}/mesos-*
 %{_datadir}/%{name}/
 %{_libexecdir}/%{name}/
-#system integration aspects
-%{_sysconfdir}/%{name}/*.template
+#system integration files
 %{python_sitelib}/%{name}/
 %attr(0755,mesos,mesos) %{_var}/log/%{name}/
 %attr(0755,mesos,mesos) %{_var}/lib/%{name}/
 %config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
-%config(noreplace) %{_sysconfdir}/%{name}/*env.sh
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}*
 %{_unitdir}/%{name}*.service
 
 ######################
@@ -299,9 +304,12 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Tue Sep 30 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-2.SNAPSHOT.3133734
+- Removing scripts and updating systemd settings.
+
 * Tue Sep 23 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-1.SNAPSHOT.3133734
-- Initial prototyping  
- 
+- Initial prototyping
+
 * Wed Aug 27 2014 Timothy St. Clair <tstclair@redhat.com> - 0.20.0-2.f421ffd
 - Fixes for system integration
 
