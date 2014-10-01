@@ -5,8 +5,8 @@ After=network.target
 Wants=network.target
 
 [Service]
-Type=forking
-ExecStart=/usr/sbin/mesos-daemon.sh mesos-slave
+EnvironmentFile=/etc/sysconfig/mesos-slave
+ExecStart=/usr/sbin/mesos-slave $MESOS_SLAVE_OPTS
 ExecStop=/usr/bin/killall -s 15 mesos-slave
 ExecReload=/bin/kill -HUP $MAINPID
 #######################################
