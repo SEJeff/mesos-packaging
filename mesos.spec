@@ -63,7 +63,9 @@ BuildRequires: glog-devel
 BuildRequires: gmock-devel
 BuildRequires: gflags-devel
 BuildRequires: gtest-devel
+%ifnarch s390 s390x
 BuildRequires: gperftools-devel
+%endif
 BuildRequires: libev-source
 BuildRequires: leveldb-devel
 BuildRequires: protobuf-python
