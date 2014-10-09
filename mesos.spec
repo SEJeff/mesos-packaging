@@ -1,4 +1,4 @@
-%global commit      31337348cef29719890bffb59fbf8df8b18b39d0
+%global commit      c96ba8f6035329acebb25ca0f52215284bbf8f8f
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.21.0
 %global skiptests   1
@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       2.SNAPSHOT.%{shortcommit}%{?dist}
+Release:       3.SNAPSHOT.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -73,9 +73,13 @@ BuildRequires: protobuf-java
 BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
+BuildRequires: python-pip
+BuildRequires: python-wheel
 
 Requires: protobuf-python
 Requires: python-boto
+Requires: python-pip
+Requires: python-wheel
 %endif
 
 %ifarch x86_64
@@ -124,7 +128,7 @@ The python-%{name} package contains Python bindings for %{name}.
 
 %prep
 %setup -q -n %{name}-%{commit}
-%patch0 -p1
+%patch0 -p1 -F2
 
 %if %unbundled
 # remove all bundled elements prior to build
@@ -211,6 +215,7 @@ popd
 
 # fedora guidelines no .a|.la
 rm -f %{buildroot}%{_libdir}/*.la
+rm -f %{buildroot}%{_libdir}/libexamplemodule*
 
 # Move the inclusions under mesos folder for developers
 mv -f %{buildroot}%{_includedir}/stout %{buildroot}%{_includedir}/%{name}
@@ -304,6 +309,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Thu Oct 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-3.SNAPSHOT.c96ba8f6
+- Update and shifting configs to latest.
+
 * Tue Sep 30 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-2.SNAPSHOT.3133734
 - Removing scripts and updating systemd settings.
 
