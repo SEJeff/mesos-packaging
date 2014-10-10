@@ -198,8 +198,8 @@ pushd src/python
 python setup.py install --root=%{buildroot} --prefix=/usr
 popd
 
-mkdir -p %{buildroot}%{python_sitelib}
-mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
+mkdir -p %{buildroot}%{python_sitelib}%{name}
+mv -f %{buildroot}%{_libexecdir}/%{name}/python/%{name}/* %{buildroot}%{python_sitelib}/%{name}
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 pushd src/python/native
