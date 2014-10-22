@@ -1,4 +1,4 @@
-%global commit      c96ba8f6035329acebb25ca0f52215284bbf8f8f
+%global commit      e960cdffec20d54b4f57f552d13cd92004f8e437
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.21.0
 %global skiptests   1
@@ -31,6 +31,9 @@ Source5:       %{name}-slave
 
 ####################################
 Patch0:        mesos-0.21-integ.patch
+
+# Transitive from zookeeper.
+ExcludeArch:   %{arm}
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -70,7 +73,7 @@ BuildRequires: libev-source
 BuildRequires: leveldb-devel
 BuildRequires: protobuf-python
 BuildRequires: protobuf-java
-BuildRequires: zookeeper-lib-devel
+BuildRequires: zookeeper-devel >= 3.4.6
 BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
 BuildRequires: python-pip
@@ -89,6 +92,10 @@ Requires: docker-io
 Requires: docker
 %endif
 %endif
+
+# The slaves will indirectly require time syncing with the master
+# nodes so just call out the dependency.
+Requires: ntp
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
@@ -144,6 +151,8 @@ autoreconf -i
 %endif
 
 %build
+
+echo "CXXFLAGS=$CXXFLAGS"
 ######################################
 # We need to rebuild libev and bind statically
 # See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
@@ -198,8 +207,8 @@ pushd src/python
 python setup.py install --root=%{buildroot} --prefix=/usr
 popd
 
-mkdir -p %{buildroot}%{python_sitelib}%{name}
-mv -f %{buildroot}%{_libexecdir}/%{name}/python/%{name}/* %{buildroot}%{python_sitelib}/%{name}
+mkdir -p  %{buildroot}%{python_sitelib}
+cp -rf %{buildroot}%{_libexecdir}/%{name}/python/%{name}/* %{buildroot}%{python_sitelib}
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 pushd src/python/native
@@ -240,6 +249,9 @@ mkdir -p -m0755 %{buildroot}/%{_var}/log/%{name}
 mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
+
+mkdir -p %{buildroot}%{_datadir}%{name}
+
 
 ######################
 # install java bindings
