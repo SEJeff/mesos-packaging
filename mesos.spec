@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       3.SNAPSHOT.%{shortcommit}%{?dist}
+Release:       4.SNAPSHOT.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -70,7 +70,8 @@ BuildRequires: libev-source
 BuildRequires: leveldb-devel
 BuildRequires: protobuf-python
 BuildRequires: protobuf-java
-BuildRequires: zookeeper-devel >= 3.4.6
+BuildRequires: zookeeper-devel
+#BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
 BuildRequires: python-pip
@@ -247,14 +248,18 @@ mkdir -p -m0755 %{buildroot}/%{_var}/lib/%{name}
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 
-mkdir -p %{buildroot}%{_datadir}%{name}
-
-
 ######################
 # install java bindings
 ######################
 %mvn_artifact src/java/%{name}.pom src/java/target/%{name}-%{version}.jar
 %mvn_install
+
+######################
+# install the examples
+######################
+make clean
+mkdir -p %{buildroot}%{_datadir}/%{name}
+cp -rf src/examples %{buildroot}%{_datadir}/%{name}
 
 ############################################
 %files
@@ -318,6 +323,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Thu Oct 23 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-4.SNAPSHOT.e960cdf
+- Update to include examples
+
 * Thu Oct 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-3.SNAPSHOT.c96ba8f6
 - Update and shifting configs to latest.
 
