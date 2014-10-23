@@ -93,7 +93,7 @@ Requires: docker
 
 # The slaves will indirectly require time syncing with the master
 # nodes so just call out the dependency.
-Requires: ntp
+Requires: ntpdate
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
