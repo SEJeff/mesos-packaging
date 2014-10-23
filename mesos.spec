@@ -32,9 +32,6 @@ Source5:       %{name}-slave
 ####################################
 Patch0:        mesos-0.21-integ.patch
 
-# Transitive from zookeeper.
-ExcludeArch:   %{arm}
-
 BuildRequires: libtool
 BuildRequires: automake
 BuildRequires: autoconf
