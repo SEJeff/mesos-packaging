@@ -1,4 +1,4 @@
-%global commit      c96ba8f6035329acebb25ca0f52215284bbf8f8f
+%global commit      e960cdffec20d54b4f57f552d13cd92004f8e437
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.21.0
 %global skiptests   1
@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       3.SNAPSHOT.%{shortcommit}%{?dist}
+Release:       4.SNAPSHOT.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -63,12 +63,15 @@ BuildRequires: glog-devel
 BuildRequires: gmock-devel
 BuildRequires: gflags-devel
 BuildRequires: gtest-devel
+%ifnarch s390 s390x
 BuildRequires: gperftools-devel
+%endif
 BuildRequires: libev-source
 BuildRequires: leveldb-devel
 BuildRequires: protobuf-python
 BuildRequires: protobuf-java
-BuildRequires: zookeeper-lib-devel
+BuildRequires: zookeeper-devel
+#BuildRequires: zookeeper-lib-devel
 BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
 BuildRequires: python-pip
@@ -87,6 +90,10 @@ Requires: docker-io
 Requires: docker
 %endif
 %endif
+
+# The slaves will indirectly require time syncing with the master
+# nodes so just call out the dependency.
+Requires: ntp
 
 %description
 Apache Mesos is a cluster manager that provides efficient resource
@@ -142,6 +149,8 @@ autoreconf -i
 %endif
 
 %build
+
+echo "CXXFLAGS=$CXXFLAGS"
 ######################################
 # We need to rebuild libev and bind statically
 # See https://bugzilla.redhat.com/show_bug.cgi?id=1049554 for details
@@ -196,8 +205,8 @@ pushd src/python
 python setup.py install --root=%{buildroot} --prefix=/usr
 popd
 
-mkdir -p %{buildroot}%{python_sitelib}
-mv %{buildroot}%{_libexecdir}/%{name}/python/%{name} %{buildroot}%{python_sitelib}
+mkdir -p  %{buildroot}%{python_sitelib}
+cp -rf %{buildroot}%{_libexecdir}/%{name}/python/%{name}/* %{buildroot}%{python_sitelib}
 rm -rf %{buildroot}%{_libexecdir}/%{name}/python
 
 pushd src/python/native
@@ -244,6 +253,13 @@ install -m 0644 %{SOURCE2} %{SOURCE3} %{buildroot}%{_unitdir}/
 ######################
 %mvn_artifact src/java/%{name}.pom src/java/target/%{name}-%{version}.jar
 %mvn_install
+
+######################
+# install the examples
+######################
+make clean
+mkdir -p %{buildroot}%{_datadir}/%{name}
+cp -rf src/examples %{buildroot}%{_datadir}/%{name}
 
 ############################################
 %files
@@ -307,6 +323,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Thu Oct 23 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-4.SNAPSHOT.e960cdf
+- Update to include examples
+
 * Thu Oct 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-3.SNAPSHOT.c96ba8f6
 - Update and shifting configs to latest.
 
