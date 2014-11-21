@@ -1,4 +1,4 @@
-%global commit      e960cdffec20d54b4f57f552d13cd92004f8e437
+%global commit      ab8fa655d34e8e15a4290422df38a18db1c09b5b
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.21.0
 %global skiptests   1
@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       4.SNAPSHOT.%{shortcommit}%{?dist}
+Release:       5.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -76,6 +76,7 @@ BuildRequires: protobuf-devel
 BuildRequires: picojson-devel
 BuildRequires: python-pip
 BuildRequires: python-wheel
+BuildRequires: subversion-devel
 
 Requires: protobuf-python
 Requires: python-boto
@@ -223,6 +224,7 @@ popd
 # fedora guidelines no .a|.la
 rm -f %{buildroot}%{_libdir}/*.la
 rm -f %{buildroot}%{_libdir}/libexamplemodule*
+rm -f %{buildroot}%{_libdir}/libtest*
 
 # Move the inclusions under mesos folder for developers
 mv -f %{buildroot}%{_includedir}/stout %{buildroot}%{_includedir}/%{name}
@@ -323,6 +325,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Fri Nov 21 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-5.ab8fa65
+- Update to latest build
+
 * Thu Oct 23 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-4.SNAPSHOT.e960cdf
 - Update to include examples
 
