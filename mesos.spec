@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.21.0
-Release:       5.%{shortcommit}%{?dist}
+Release:       6.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -31,6 +31,7 @@ Source5:       %{name}-slave
 
 ####################################
 Patch0:        mesos-0.21-integ.patch
+Patch1:        mesos-0.21.0-http-parser.patch
 
 BuildRequires: libtool
 BuildRequires: automake
@@ -135,6 +136,7 @@ The python-%{name} package contains Python bindings for %{name}.
 %prep
 %setup -q -n %{name}-%{commit}
 %patch0 -p1 -F2
+%patch1 -p1
 
 %if %unbundled
 # remove all bundled elements prior to build
@@ -325,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Tue Dec 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-6.ab8fa65
+- Fix for python bindings
+
 * Fri Nov 21 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-5.ab8fa65
 - Update to latest build
 

@@ -1,0 +1,13 @@
+diff --git a/src/python/native/ext_modules.py.in b/src/python/native/ext_modules.py.in
+index 4825fe4..b9fb7b9 100644
+--- a/src/python/native/ext_modules.py.in
++++ b/src/python/native/ext_modules.py.in
+@@ -102,6 +102,8 @@ if os.path.exists(libprotobuf):
+ else:
+   EXTRA_OBJECTS.append('-lprotobuf')
+ 
++EXTRA_OBJECTS.append('-lhttp_parser')
++
+ # For gperftools, we need to check for the presence of libprofiler.a, since
+ # it is possible to disable perftools inside libprocess.
+ libprofiler = os.path.join(
