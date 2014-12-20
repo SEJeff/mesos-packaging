@@ -20,7 +20,7 @@ index 86d448c..75e494c 100644
 @@ -19,6 +19,12 @@
  
  AC_PREREQ([2.61])
- AC_INIT([mesos], [0.21.0])
+ AC_INIT([mesos], [0.22.0])
 +MAJOR_VER=0
 +MINOR_VER=21
 +PATCH_VER=0
