@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.22.0
-Release:       SNAPSHOT.1.%{shortcommit}%{?dist}
+Release:       SNAPSHOT.1.%{shortcommit}%{?dist}.1
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -327,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Mon Jan 26 2015 Petr Machata <pmachata@redhat.com> - 0.22.0-SNAPSHOT.1.c513126.1
+- Rebuild for boost 1.57.0
+
 * Tue Dec 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.22.0-1.SNAPSHOT.ab8fa65
 - Update to track next release
 
