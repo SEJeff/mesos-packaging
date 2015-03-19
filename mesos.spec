@@ -1,4 +1,4 @@
-%global commit     c51312665029554b49b7401f511a24ddd63bcd41 
+%global commit      e890e2414903bb69cab730d5204f10b10d2e91bb
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global tag         0.22.0
 %global skiptests   1
@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.22.0
-Release:       SNAPSHOT.1.%{shortcommit}%{?dist}.1
+Release:       2.%{shortcommit}%{?dist}.1
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -327,11 +327,14 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Thu Mar 19 2015 Timothy St. Clair <tstclair@redhat.com> - 0.22.0-2.e890e24
+- Update to 0.22.0 official release
+
+* Sat Feb 14 2015 Timothy St. Clair <tstclair@redhat.com> - 0.22.0-1.SNAPSHOT.033c062
+- Update to track next release
+
 * Mon Jan 26 2015 Petr Machata <pmachata@redhat.com> - 0.22.0-SNAPSHOT.1.c513126.1
 - Rebuild for boost 1.57.0
-
-* Tue Dec 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.22.0-1.SNAPSHOT.ab8fa65
-- Update to track next release
 
 * Tue Dec 9 2014 Timothy St. Clair <tstclair@redhat.com> - 0.21.0-6.ab8fa65
 - Fix for python bindings
