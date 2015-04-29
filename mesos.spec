@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.22.0
-Release:       3.%{shortcommit}%{?dist}.1
+Release:       4.%{shortcommit}%{?dist}.1
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -327,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Apr 29 2015 Kalev Lember <kalevlember@gmail.com> - 0.22.0-4.e890e24.1
+- Rebuilt for protobuf soname bump
+
 * Mon Apr 20 2015 Timothy St. Clair <tstclair@redhat.com> - 0.22.0-3.e890e24
 - Fix for .so build version
 
