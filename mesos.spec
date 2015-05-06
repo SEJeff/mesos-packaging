@@ -1,6 +1,6 @@
-%global commit      e890e2414903bb69cab730d5204f10b10d2e91bb
+%global commit      d6309f92a7f9af3ab61a878403e3d9c284ea87e0
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.22.0
+%global tag         0.22.1
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
@@ -16,8 +16,8 @@
 %global systemmvn   1
 
 Name:          mesos
-Version:       0.22.0
-Release:       4.%{shortcommit}%{?dist}.1
+Version:       0.22.1
+Release:       0.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -327,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed May 6 2015 Timothy St. Clair <tstclair@redhat.com> - 0.22.1-0.d6309f9
+- Build for latest patch release
+
 * Wed Apr 29 2015 Kalev Lember <kalevlember@gmail.com> - 0.22.0-4.e890e24.1
 - Rebuilt for protobuf soname bump
 
