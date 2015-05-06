@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.22.1
-Release:       0.%{shortcommit}%{?dist}.1
+Release:       0.%{shortcommit}%{?dist}
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
