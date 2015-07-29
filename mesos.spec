@@ -17,7 +17,7 @@
 
 Name:          mesos
 Version:       0.22.1
-Release:       0.%{shortcommit}%{?dist}.2
+Release:       0.%{shortcommit}%{?dist}.3
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -327,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Jul 29 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.22.1-0.d6309f9.3
+- Rebuilt for https://fedoraproject.org/wiki/Changes/F23Boost159
+
 * Wed Jul 22 2015 David Tardon <dtardon@redhat.com> - 0.22.1-0.d6309f9.2
 - rebuild for Boost 1.58
 
