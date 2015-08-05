@@ -1,6 +1,6 @@
-%global commit      d6309f92a7f9af3ab61a878403e3d9c284ea87e0
+%global commit      4ce5475346a0abb7ef4b7ffc9836c5836d7c7a66
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global tag         0.22.1
+%global tag         0.23.0
 %global skiptests   1
 %global libevver    4.15
 %global py_version  2.7
@@ -16,8 +16,8 @@
 %global systemmvn   1
 
 Name:          mesos
-Version:       0.22.1
-Release:       0.%{shortcommit}%{?dist}.3
+Version:       0.23.0
+Release:       0.%{shortcommit}%{?dist}.0
 Summary:       Cluster manager for sharing distributed application frameworks
 License:       ASL 2.0
 URL:           http://mesos.apache.org/
@@ -136,7 +136,7 @@ The python-%{name} package contains Python bindings for %{name}.
 %prep
 %setup -q -n %{name}-%{commit}
 %patch0 -p1 -F2
-%patch1 -p1
+%patch1 -p1 -F2
 
 %if %unbundled
 # remove all bundled elements prior to build
@@ -327,6 +327,9 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Aug 5 2015 Timothy St. Clair <tstclair@redhat.com> - 0.23.0-0.4ce5475.0
+- Build for latest release
+
 * Wed Jul 29 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.22.1-0.d6309f9.3
 - Rebuilt for https://fedoraproject.org/wiki/Changes/F23Boost159
 
