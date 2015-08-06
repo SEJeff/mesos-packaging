@@ -39,11 +39,20 @@ BuildRequires: autoconf
 BuildRequires: java-devel
 BuildRequires: zlib-devel
 BuildRequires: libcurl-devel
+BuildRequires: python-boto
 BuildRequires: python-setuptools
 BuildRequires: python2-devel
 BuildRequires: openssl-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: systemd
+
+# Needed for RHEL/CentOS 7 and variants
+%if 0%{?el7}
+BuildRequires: apr-devel
+BuildRequires: cyrus-sasl-md5
+BuildRequires: subversion-devel
+BuildRequires: http-parser-devel
+%endif
 
 %if %systemmvn
 BuildRequires: maven-local
@@ -327,6 +336,10 @@ exit 0
 /sbin/ldconfig
 
 %changelog
+* Wed Aug 5 2015 Jeff Schroeder <jeffschroeder@computer.org> - 0.23.0-0.4ce5475.1
+- Added support for building on EL7 based distributions such as RHEL7
+- Add BuildRequires on python-boto so AWS support works out of the box
+
 * Wed Aug 5 2015 Timothy St. Clair <tstclair@redhat.com> - 0.23.0-0.4ce5475.0
 - Build for latest release
 
